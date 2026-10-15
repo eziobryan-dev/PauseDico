@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <!-- Page Gradient -->
+    <linearGradient id="pageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#EEF2FF" />
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Base -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)" />
+
+  <!-- Open Pages -->
+  <path d="M 120 190 C 170 170, 220 185, 256 200 C 292 185, 342 170, 392 190 V 350 C 342 330, 292 345, 256 360 C 220 345, 170 330, 120 350 Z" 
+        fill="url(#pageGrad)" />
+  <path d="M 256 200 V 360" stroke="#6366F1" stroke-width="10" stroke-linecap="round" opacity="0.3" />
+
+  <!-- Stylized Letter 'W' in center -->
+  <path d="M 175 235 L 215 315 L 256 265 L 297 315 L 337 235" 
+        stroke="#4F46E5" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- Daily Sparkle / Sun -->
+  <path d="M 380 120 L 386 138 L 404 144 L 386 150 L 380 168 L 374 150 L 356 144 L 374 138 Z" fill="#FBBF24" />
+</svg>
