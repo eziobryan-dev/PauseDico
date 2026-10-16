@@ -4,15 +4,20 @@ import 'package:flutter/services.dart';
 import '../core/theme/app_theme.dart';
 import '../models/reward_summary_model.dart';
 import '../services/level_service.dart';
-import 'pop_in.dart';
+import 'fade_in.dart';
 
-/// Rewards just granted: one line per reward (+xp, +skips), popping in one
-/// after the other, and the new level when one was reached. Vibrates once
-/// when shown (stronger on a level up).
+/// Rewards just granted: one line per reward (+xp, +skips), fading in one
+/// after the other every [rowInterval], and the new level when one was
+/// reached. Vibrates once when shown (stronger on a level up).
 class RewardSummaryView extends StatefulWidget {
   final RewardSummaryModel rewards;
+  final Duration rowInterval;
 
-  const RewardSummaryView({super.key, required this.rewards});
+  const RewardSummaryView({
+    super.key,
+    required this.rewards,
+    this.rowInterval = const Duration(milliseconds: 200),
+  });
 
   @override
   State<RewardSummaryView> createState() => _RewardSummaryViewState();
@@ -44,8 +49,8 @@ class _RewardSummaryViewState extends State<RewardSummaryView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < rewards.events.length; i++)
-            PopIn(
-              delay: Duration(milliseconds: 200 * i),
+            FadeIn(
+              delay: widget.rowInterval * i,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
@@ -71,8 +76,8 @@ class _RewardSummaryViewState extends State<RewardSummaryView> {
               ),
             ),
           if (rewards.hasLevelUp)
-            PopIn(
-              delay: Duration(milliseconds: 200 * rewards.events.length),
+            FadeIn(
+              delay: widget.rowInterval * rewards.events.length,
               child: Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(

@@ -24,6 +24,19 @@ class RewardSummaryModel {
 
   bool get hasLevelUp => events.any((event) => event.levelUp);
 
+  /// Rewards of this action followed by [next]'s (e.g. a reveal then a skip
+  /// that unlocks a letter), with the profile figures after [next]
+  RewardSummaryModel merge(RewardSummaryModel? next) {
+    if (next == null) return this;
+    return RewardSummaryModel(
+      events: [...events, ...next.events],
+      xp: next.xp,
+      level: next.level,
+      nbSkip: next.nbSkip,
+      currentStreak: next.currentStreak,
+    );
+  }
+
   factory RewardSummaryModel.fromJson(Map<String, dynamic> json) {
     final profile = (json['profile'] as Map<String, dynamic>?) ?? const {};
     return RewardSummaryModel(
