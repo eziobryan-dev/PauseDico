@@ -278,12 +278,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        // Brand title on the left (the theme centers the other screens' titles)
+        centerTitle: false,
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const AppLogo(size: 32),
-            const SizedBox(width: 10),
-            const ScreenTitle('PauseDico'),
+            AppLogo(size: 32),
+            SizedBox(width: 10),
+            Flexible(child: ScreenTitle('PauseDico')),
           ],
         ),
         actions: [

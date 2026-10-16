@@ -8,10 +8,13 @@ import '../widgets/error_banner.dart';
 import '../widgets/gradient_title.dart';
 import '../widgets/info_banner.dart';
 
-/// Sign in / sign up screen. Navigation after success is handled by the
-/// auth state StreamBuilder in main.dart.
+/// Sign in / sign up screen. Navigation after success is handled by
+/// AuthGate (auth state changes).
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  /// Error from completing a sign-in link (Google, email confirmation…)
+  final String? linkErrorMessage;
+
+  const AuthScreen({super.key, this.linkErrorMessage});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -30,6 +33,25 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   String? _infoMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _errorMessage = widget.linkErrorMessage;
+  }
+
+  @override
+  void didUpdateWidget(AuthScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final linkError = widget.linkErrorMessage;
+    if (linkError != null && linkError != oldWidget.linkErrorMessage) {
+      setState(() {
+        _isLoading = false;
+        _infoMessage = null;
+        _errorMessage = linkError;
+      });
+    }
+  }
 
   @override
   void dispose() {

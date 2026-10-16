@@ -22,6 +22,10 @@ class _AuthGateState extends State<AuthGate> {
   late final StreamSubscription<AuthState> _subscription;
   bool _isRecoveringPassword = false;
 
+  /// Error raised while completing a sign-in from a link (Google, email
+  /// confirmation…), shown on the sign in screen instead of failing silently
+  String? _authError;
+
   /// null while the cached flag is being read
   bool? _onboardingDone;
 
@@ -33,16 +37,27 @@ class _AuthGateState extends State<AuthGate> {
     OnboardingService.isDone().then((done) {
       if (mounted) setState(() => _onboardingDone = done);
     });
-    _subscription = _client.auth.onAuthStateChange.listen((state) {
-      if (!mounted) return;
-      setState(() {
-        if (state.event == AuthChangeEvent.passwordRecovery) {
-          _isRecoveringPassword = true;
-        } else if (state.event == AuthChangeEvent.signedOut) {
-          _isRecoveringPassword = false;
-        }
-      });
-    });
+    _subscription = _client.auth.onAuthStateChange.listen(
+      (state) {
+        if (!mounted) return;
+        setState(() {
+          _authError = null;
+          if (state.event == AuthChangeEvent.passwordRecovery) {
+            _isRecoveringPassword = true;
+          } else if (state.event == AuthChangeEvent.signedOut) {
+            _isRecoveringPassword = false;
+          }
+        });
+      },
+      onError: (Object error) {
+        if (!mounted) return;
+        setState(() {
+          _authError = error is AuthException
+              ? 'Connexion impossible : ${error.message}'
+              : 'Connexion impossible. Réessaie.';
+        });
+      },
+    );
   }
 
   @override
@@ -53,7 +68,9 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (_client.auth.currentSession == null) return const AuthScreen();
+    if (_client.auth.currentSession == null) {
+      return AuthScreen(linkErrorMessage: _authError);
+    }
     if (_isRecoveringPassword) {
       return ResetPasswordScreen(
         onDone: () => setState(() => _isRecoveringPassword = false),

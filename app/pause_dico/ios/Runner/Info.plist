@@ -16,6 +16,9 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>pause_dico</string>
+	<!-- Auth links are handled by app_links / Supabase, not by Flutter's router -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<!-- Google sign-in (Supabase OAuth) redirects back to the app -->
 	<key>CFBundleURLTypes</key>
 	<array>
