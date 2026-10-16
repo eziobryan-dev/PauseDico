@@ -18,7 +18,7 @@ Tables (schéma `public`, RLS activé partout) :
 |---|---|---|
 | `word` | `id` (bigint, PK), `name`, `gender` (toujours « n. »), `type` (ex. « nom féminin »), `theme` (ex. « Botanique », 651 thèmes), `definition`, `nb_likes`, `nb_skip`, `pick_weight` (float, défaut 100, min 1), `first_letter` (généré : 1re lettre sans accent, A–Z, indexé) | ~133 613 mots. `nb_likes` = nb de users qui likent le mot, `nb_skip` = nb de fois où il a été skippé. `pick_weight` = max(1, 100 + 0,5 × `nb_likes` − 0,5 × `nb_skip`) |
 | `user` | `id` (uuid, PK → `auth.users.id`), `username`, `email`, `created_at`, `notif_time` (time), `dark_theme` | Profil applicatif. Le client ne peut modifier que `username`, `notif_time` et `dark_theme` (`created_at` fixe les échéances des quiz spéciaux). Créé par le trigger `handle_new_user` avec le username choisi à l'inscription |
-| `user_game_profile` | `user_id` (PK → `user.id`), `xp` (0–13 230), `level` (généré depuis `xp`), `nb_words`, `nb_quiz_weekly/monthly/yearly_completed`, `nb_skip` (défaut 1), `current_streak`, `best_streak`, `last_reveal_date`, `letters_mask` (26 bits, A = bit 0), `has_all_letters` (généré) | Lecture seule côté client ; créé par le trigger `handle_new_user` |
+| `user_game_profile` | `user_id` (PK → `user.id`), `xp` (0–14 700), `level` (généré depuis `xp`), `nb_words`, `nb_quiz_weekly/monthly/yearly_completed`, `nb_skip` (défaut 1), `current_streak`, `best_streak`, `last_reveal_date`, `letters_mask` (26 bits, A = bit 0), `has_all_letters` (généré) | Lecture seule côté client ; créé par le trigger `handle_new_user` |
 | `user_reward_event` | `user_id`, `source`, `ref`, `xp`, `skips`, `created_at` | PK (`user_id`, `source`, `ref`) : chaque récompense n'est donnée qu'une fois. Journal des récompenses |
 | `quiz_session` | `id` (uuid), `user_id`, `kind`, `ref_date`, `word_ids`, `options` (jsonb), `answers`, `score`, `completed_at` | Quiz en cours / joués. Les bonnes réponses restent côté serveur. Accessible uniquement via les RPC |
 | `user_word_history` | `user_id` → `user.id`, `word_id` → `word.id`, `date` (défaut `CURRENT_DATE`), `liked` | PK (`user_id`, `word_id`), unique (`user_id`, `date`). Lecture seule côté client. Jointure via `word:word!user_word_history_word_id_fkey(...)` |
@@ -30,7 +30,7 @@ Les 3 mots sont tirés côté serveur (`pick_daily_choices`) parmi les mots jama
 Au plus une fois tous les 7 jours, l'un des 3 est une « lettre mystère » : un mot commençant par une lettre pas encore découverte par le user.
 
 Gamification (tout est calculé côté serveur, dans les RPC ci-dessous, via `grant_reward`) :
-- Niveaux : passer du niveau n à n+1 coûte 20 + 10n XP (niveau L atteint à 5L² + 15L − 20 XP), plafond niveau 50, plus d'XP ensuite. +1 skip par niveau gagné. Titres dans `LevelService`.
+- Niveaux : passer du niveau n à n+1 coûte 50 + 10n XP (niveau L atteint à 5L² + 45L − 50 XP : niveau 2 à 60 XP, donc pas dès le 1er reveal), plafond niveau 50 à 14 700 XP, plus d'XP ensuite. +1 skip par niveau gagné. Titres dans `LevelService`.
 - Reveal du mot du jour : +10 XP. Série de reveals consécutifs (le dimanche, jour du Quiz hebdo sans mot du jour, ne casse pas la série : `is_next_reveal_day`) : 3 j +15 XP, 7 j +30 XP +1 skip, 30 j +100 XP +3 skips, tous les 100 j +300 XP +10 skips.
 - Nouvelle lettre découverte (1re lettre d'un mot révélé ou skippé) : +20 XP ; les 26 lettres : +500 XP.
 - Quiz hebdo : au moins 3 mots dans la semaine ; les quiz des semaines passées sont rejouables mais ne rapportent rien.

@@ -1,6 +1,6 @@
 /// Level curve and titles. Mirrors the server: going from level n to n+1
-/// costs 20 + 10n xp, so reaching level L takes 5L² + 15L − 20 xp.
-/// Capped at level 50, with no xp beyond.
+/// costs 50 + 10n xp, so reaching level L takes 5L² + 45L − 50 xp
+/// (level 2 at 60 xp). Capped at level 50 (14 700 xp), with no xp beyond.
 abstract class LevelService {
   static const int maxLevel = 50;
 
@@ -20,7 +20,7 @@ abstract class LevelService {
   };
 
   /// Total xp needed to reach [level]
-  static int xpForLevel(int level) => 5 * level * level + 15 * level - 20;
+  static int xpForLevel(int level) => 5 * level * level + 45 * level - 50;
 
   /// Title of the highest step reached at [level]
   static String titleFor(int level) => _titles.entries
