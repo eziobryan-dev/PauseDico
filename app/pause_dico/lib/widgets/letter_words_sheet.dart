@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/alphabet_tier_model.dart';
 import '../models/word_model.dart';
+import 'bookmark_art.dart';
 
 /// Bottom sheet listing the discovered words starting with a letter.
 /// The words are loaded before opening, so the sheet slides up from the
@@ -9,18 +11,31 @@ class LetterWordsSheet extends StatelessWidget {
   final String letter;
   final List<WordModel> words;
 
-  const LetterWordsSheet({super.key, required this.letter, required this.words});
+  /// Tier of the bookmark that unlocked this letter, if one did
+  final AlphabetTier? bookmarkTier;
+
+  const LetterWordsSheet({
+    super.key,
+    required this.letter,
+    required this.words,
+    this.bookmarkTier,
+  });
 
   static Future<void> show(
     BuildContext context, {
     required String letter,
     required List<WordModel> words,
+    AlphabetTier? bookmarkTier,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (context) => LetterWordsSheet(letter: letter, words: words),
+      builder: (context) => LetterWordsSheet(
+        letter: letter,
+        words: words,
+        bookmarkTier: bookmarkTier,
+      ),
     );
   }
 
@@ -41,6 +56,23 @@ class LetterWordsSheet extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+          if (bookmarkTier case final tier?)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  BookmarkArt(tier: tier, size: 24),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Débloquée avec un ${tier.bookmarkName}',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 8),
           Flexible(
             child: ListView.separated(

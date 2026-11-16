@@ -27,10 +27,10 @@ class DailyWordRevealModel {
     );
   }
 
-  DailyWordRevealModel copyWith({bool? liked}) {
+  DailyWordRevealModel copyWith({bool? liked, int? skipsLeft}) {
     return DailyWordRevealModel(
       word: word,
-      skipsLeft: skipsLeft,
+      skipsLeft: skipsLeft ?? this.skipsLeft,
       liked: liked ?? this.liked,
       rewards: rewards,
     );

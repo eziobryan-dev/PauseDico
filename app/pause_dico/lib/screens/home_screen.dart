@@ -4,6 +4,7 @@ import '../core/constants/app_constants.dart';
 import '../core/utils/context_extensions.dart';
 import '../core/utils/date_helpers.dart';
 import '../models/quiz_result_model.dart';
+import '../models/reward_summary_model.dart';
 import '../models/special_quiz_model.dart';
 import '../models/user_word_history_model.dart';
 import '../models/word_model.dart';
@@ -11,6 +12,7 @@ import '../repositories/quiz_repository.dart';
 import '../repositories/user_game_profile_repository.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/user_word_history_repository.dart';
+import '../services/ad_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/ad_slot.dart';
@@ -74,6 +76,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _fetchUserAndLoadWord();
+    // Consent form (first launch in Europe), then ads
+    AdService.init();
   }
 
   @override
@@ -203,6 +207,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         reveal: reveal,
         onSkip: () => _historyRepository.skipDailyWord(date),
         onLikeChanged: _historyRepository.setWordLiked,
+        canWatchAdForSkip: () async =>
+            AdService.isReady.value &&
+            await _gameProfileRepository.canClaimAdSkip(date),
+        onWatchAdForSkip: () => _watchAdForSkip(date),
       );
       if (!mounted) return;
 
@@ -223,6 +231,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } finally {
       if (mounted) setState(() => _isRevealing = false);
     }
+  }
+
+  /// Rewarded ad, then the server grants the skip (null if not watched)
+  Future<RewardSummaryModel?> _watchAdForSkip(DateTime date) async {
+    if (!await AdService.showRewardedAd()) return null;
+    return _gameProfileRepository.claimAdSkip(date);
   }
 
   Future<bool> _setDailyWordLiked(bool liked) async {
@@ -324,17 +338,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      // The ad takes the bottom quarter of the screen, the content scrolls above
-      body: LayoutBuilder(
-        builder: (context, constraints) => Column(
-          children: [
-            Expanded(child: _buildScrollableContent()),
-            SizedBox(
-              height: constraints.maxHeight * AppConstants.homeAdHeightRatio,
-              child: const SafeArea(top: false, child: AdSlot()),
-            ),
-          ],
-        ),
+      // Banner anchored at the bottom, the content scrolls above
+      body: Column(
+        children: [
+          Expanded(child: _buildScrollableContent()),
+          const AdSlot(),
+        ],
       ),
     );
   }

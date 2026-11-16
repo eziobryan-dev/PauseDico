@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants/app_constants.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/tier_colors.dart';
+import '../models/alphabet_tier_model.dart';
 import '../models/user_game_profile_model.dart';
 import '../services/level_service.dart';
+import 'bookmark_art.dart';
 
-/// Profile card: level and title, xp progress, streak, skips and letters
+/// Profile card: level and title, xp progress, streak, skips, words unlocked,
+/// letters, bookmark fragments and bookmarks (named after the Alphadex tier)
 class LevelCard extends StatelessWidget {
   final UserGameProfileModel profile;
 
@@ -15,6 +20,7 @@ class LevelCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isMaxLevel = profile.level >= LevelService.maxLevel;
     final streak = profile.activeStreak(DateTime.now());
+    final tier = profile.tier;
 
     return Card(
       child: Padding(
@@ -85,9 +91,28 @@ class LevelCard extends StatelessWidget {
                   color: AppColors.success,
                 ),
                 _Stat(
+                  icon: Icons.menu_book_rounded,
+                  label: '${profile.nbWords} mot${profile.nbWords > 1 ? 's' : ''} '
+                      'débloqué${profile.nbWords > 1 ? 's' : ''}',
+                  color: AppColors.info,
+                ),
+                _Stat(
                   icon: Icons.abc,
-                  label: '${profile.lettersCount} / 26 lettres dorées',
-                  color: AppColors.warning,
+                  label: '${profile.lettersCount} / 26 lettres ${tier.femininePlural}',
+                  color: TierColors.dark(tier),
+                ),
+                _Stat(
+                  art: BookmarkArt.fragment(tier: tier, size: 18),
+                  label: '${profile.bookmarkFragments} / ${AppConstants.fragmentsPerBookmark} '
+                      'fragments',
+                  color: TierColors.dark(tier),
+                ),
+                _Stat(
+                  art: BookmarkArt(tier: tier, size: 18),
+                  label: '${profile.bookmarks} marque-page'
+                      '${profile.bookmarks > 1 ? 's' : ''} ${tier.masculine}'
+                      '${profile.bookmarks > 1 && tier == AlphabetTier.gold ? 's' : ''}',
+                  color: TierColors.dark(tier),
                 ),
               ],
             ),
@@ -99,11 +124,14 @@ class LevelCard extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+
+  /// Drawing shown instead of [icon]
+  final Widget? art;
   final String label;
   final Color color;
 
-  const _Stat({required this.icon, required this.label, required this.color});
+  const _Stat({this.icon, this.art, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +144,7 @@ class _Stat extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: color),
+          art ?? Icon(icon, size: 18, color: color),
           const SizedBox(width: 6),
           Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],

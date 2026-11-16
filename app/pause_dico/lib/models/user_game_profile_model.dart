@@ -1,9 +1,14 @@
 import '../core/utils/date_helpers.dart';
+import 'alphabet_tier_model.dart';
 
 class UserGameProfileModel {
+  static const _allLettersMask = (1 << 26) - 1;
+
   final String userId;
   final int level;
   final int xp;
+
+  /// Words revealed since the account was created (skipped ones excluded)
   final int nbWords;
   final int nbQuizWeeklyCompleted;
   final int nbQuizMonthlyCompleted;
@@ -13,9 +18,20 @@ class UserGameProfileModel {
   final int bestStreak;
   final DateTime? lastRevealDate;
 
-  /// One bit per discovered first letter: bit 0 = A … bit 25 = Z
+  /// One bit per letter (bit 0 = A … bit 25 = Z). Gold letters come from the
+  /// history words ([lettersMask]) or from bookmarks ([goldBookmarkMask]).
   final int lettersMask;
-  final bool hasAllLetters;
+  final int goldBookmarkMask;
+
+  /// Day the gold Alphadex was completed: the emerald one started after it
+  final DateTime? emeraldSince;
+
+  /// Emerald letters: from words revealed after [emeraldSince], or bookmarks
+  final int emeraldMask;
+  final int emeraldBookmarkMask;
+
+  final int bookmarkFragments;
+  final int bookmarks;
 
   const UserGameProfileModel({
     required this.userId,
@@ -30,8 +46,24 @@ class UserGameProfileModel {
     required this.bestStreak,
     required this.lastRevealDate,
     required this.lettersMask,
-    required this.hasAllLetters,
+    required this.goldBookmarkMask,
+    required this.emeraldSince,
+    required this.emeraldMask,
+    required this.emeraldBookmarkMask,
+    required this.bookmarkFragments,
+    required this.bookmarks,
   });
+
+  AlphabetTier get tier =>
+      emeraldSince == null ? AlphabetTier.gold : AlphabetTier.emerald;
+
+  /// Letters unlocked in the current tier
+  int get activeMask => tier == AlphabetTier.gold
+      ? lettersMask | goldBookmarkMask
+      : emeraldMask | emeraldBookmarkMask;
+
+  int get _activeBookmarkMask =>
+      tier == AlphabetTier.gold ? goldBookmarkMask : emeraldBookmarkMask;
 
   /// The streak still counts if the last reveal was today or yesterday, or on
   /// Saturday when yesterday was Sunday (quiz day, no daily word)
@@ -46,14 +78,23 @@ class UserGameProfileModel {
         : 0;
   }
 
-  bool hasLetter(String letter) =>
-      lettersMask & (1 << (letter.codeUnitAt(0) - 'A'.codeUnitAt(0))) != 0;
+  static int _bit(String letter) =>
+      1 << (letter.codeUnitAt(0) - 'A'.codeUnitAt(0));
 
-  int get lettersCount => List.generate(26, (i) => lettersMask >> i & 1)
+  /// Unlocked in the current tier
+  bool hasLetter(String letter) => activeMask & _bit(letter) != 0;
+
+  /// Unlocked with a bookmark in the current tier
+  bool hasBookmarkLetter(String letter) => _activeBookmarkMask & _bit(letter) != 0;
+
+  int get lettersCount => List.generate(26, (i) => activeMask >> i & 1)
       .fold(0, (sum, bit) => sum + bit);
+
+  bool get hasAllLetters => activeMask == _allLettersMask;
 
   factory UserGameProfileModel.fromJson(Map<String, dynamic> json) {
     final lastRevealDate = json['last_reveal_date'] as String?;
+    final emeraldSince = json['emerald_since'] as String?;
     return UserGameProfileModel(
       userId: json['user_id'] as String,
       level: json['level'] as int? ?? 1,
@@ -68,7 +109,12 @@ class UserGameProfileModel {
       lastRevealDate:
           lastRevealDate == null ? null : DateTime.parse(lastRevealDate),
       lettersMask: json['letters_mask'] as int? ?? 0,
-      hasAllLetters: json['has_all_letters'] as bool? ?? false,
+      goldBookmarkMask: json['gold_bookmark_mask'] as int? ?? 0,
+      emeraldSince: emeraldSince == null ? null : DateTime.parse(emeraldSince),
+      emeraldMask: json['emerald_mask'] as int? ?? 0,
+      emeraldBookmarkMask: json['emerald_bookmark_mask'] as int? ?? 0,
+      bookmarkFragments: json['bookmark_fragments'] as int? ?? 0,
+      bookmarks: json['bookmarks'] as int? ?? 0,
     );
   }
 
@@ -88,7 +134,14 @@ class UserGameProfileModel {
           ? null
           : DateHelpers.toIsoDateString(lastRevealDate),
       'letters_mask': lettersMask,
-      'has_all_letters': hasAllLetters,
+      'gold_bookmark_mask': goldBookmarkMask,
+      'emerald_since': emeraldSince == null
+          ? null
+          : DateHelpers.toIsoDateString(emeraldSince),
+      'emerald_mask': emeraldMask,
+      'emerald_bookmark_mask': emeraldBookmarkMask,
+      'bookmark_fragments': bookmarkFragments,
+      'bookmarks': bookmarks,
     };
   }
 }

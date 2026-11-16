@@ -7,6 +7,7 @@ import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/user_game_profile_repository.dart';
 import '../repositories/user_repository.dart';
+import '../services/ad_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/level_card.dart';
@@ -37,6 +38,9 @@ class _UserScreenState extends State<UserScreen> {
   bool _notificationEnabled = false;
   bool _isSavingNotification = false;
 
+  /// Europe (RGPD): the user must be able to change their ad consent
+  bool _privacyOptionsRequired = false;
+
   TimeOfDay get _notifTime => _user?.notifTime ?? NotificationService.defaultTime;
 
   @override
@@ -55,12 +59,14 @@ class _UserScreenState extends State<UserScreen> {
     final profile = await _userRepository.getUser();
     final gameProfile = await _gameProfileRepository.getProfile();
     final notificationEnabled = await _loadNotificationEnabled();
+    final privacyOptionsRequired = await AdService.isPrivacyOptionsRequired();
     if (!mounted) return;
 
     setState(() {
       _user = profile;
       _gameProfile = gameProfile;
       _notificationEnabled = notificationEnabled;
+      _privacyOptionsRequired = privacyOptionsRequired;
       if (profile != null) {
         _usernameController.text = profile.username;
       }
@@ -221,6 +227,17 @@ class _UserScreenState extends State<UserScreen> {
             onChanged: _toggleNotification,
             onTimeTap: _changeNotificationTime,
           ),
+          if (_privacyOptionsRequired) ...[
+            const SizedBox(height: 20),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: const Text('Confidentialité des publicités'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: AdService.showPrivacyOptions,
+              ),
+            ),
+          ],
           const SizedBox(height: 60),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(

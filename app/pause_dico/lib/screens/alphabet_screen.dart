@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/tier_colors.dart';
 import '../core/utils/context_extensions.dart';
+import '../core/utils/date_helpers.dart';
 import '../models/user_game_profile_model.dart';
 import '../models/word_model.dart';
 import '../repositories/user_game_profile_repository.dart';
 import '../repositories/user_word_history_repository.dart';
+import '../widgets/emerald_alphadex_view.dart';
 import '../widgets/letter_tile.dart';
+import '../widgets/use_bookmark_dialog.dart';
 import '../widgets/letter_words_sheet.dart';
 import '../widgets/screen_title.dart';
 
 /// Alphabet collection: a letter turns gold once a word starting with it was
-/// discovered. Read from the profile's letters_mask (a single row).
+/// discovered (or a golden bookmark was used on it). Once the 26 are gold,
+/// the emerald Alphadex starts over. Read from the profile (a single row).
 class AlphabetScreen extends StatefulWidget {
   const AlphabetScreen({super.key});
 
@@ -39,6 +44,7 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
   /// Words per letter, loaded once: the sheet opens already at its final size
   final Map<String, List<WordModel>> _wordsByLetter = {};
   String? _loadingLetter;
+  bool _isUsingBookmark = false;
 
   @override
   void initState() {
@@ -75,7 +81,45 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
     }
 
     if (!mounted) return;
-    LetterWordsSheet.show(context, letter: letter, words: words);
+    LetterWordsSheet.show(
+      context,
+      letter: letter,
+      words: words,
+      bookmarkTier: _profile?.hasBookmarkLetter(letter) ?? false ? _profile!.tier : null,
+    );
+  }
+
+  /// Locked letter + a bookmark: confirm, then unlock it on the server
+  Future<void> _useBookmark(String letter) async {
+    final profile = _profile;
+    if (profile == null || _isUsingBookmark) return;
+
+    final confirmed = await UseBookmarkDialog.show(
+      context,
+      letter: letter,
+      tier: profile.tier,
+      bookmarksLeft: profile.bookmarks,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isUsingBookmark = true);
+    try {
+      final rewards = await _profileRepository.useBookmark(
+        DateHelpers.dateOnly(DateTime.now()),
+        letter,
+      );
+      final updated = await _profileRepository.getProfile();
+      if (!mounted) return;
+      setState(() => _profile = updated ?? profile);
+      context.showSnackBar('Lettre $letter débloquée ! +${rewards.totalXp} XP');
+      if (rewards.emeraldUnlocked || rewards.emeraldCompleted) {
+        await EmeraldAlphadexView.show(context, completed: rewards.emeraldCompleted);
+      }
+    } catch (e) {
+      if (mounted) context.showSnackBar('Impossible de débloquer la lettre.');
+    } finally {
+      if (mounted) setState(() => _isUsingBookmark = false);
+    }
   }
 
   @override
@@ -101,14 +145,19 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
         children: [
           Text(
             profile.hasAllLetters
-                ? 'Alphadex complet ! 🏆'
-                : '${profile.lettersCount} / 26 lettres',
+                ? '${profile.tier.alphadexName} complet ! 🏆'
+                : '${profile.lettersCount} / 26 lettres ${profile.tier.femininePlural}',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w900,
+              color: TierColors.dark(profile.tier),
             ),
           ),
           Text(
-            'Touche une lettre dorée pour voir tes mots',
+            profile.bookmarks > 0
+                ? 'Touche une lettre grise pour la débloquer avec un '
+                    '${profile.tier.bookmarkName} (${profile.bookmarks})'
+                : 'Touche une lettre ${profile.tier.feminine} pour voir tes mots',
+            textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -116,7 +165,7 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
           // Same height whether loading or not: no layout shift
           SizedBox(
             height: 16,
-            child: _loadingLetter == null
+            child: _loadingLetter == null && !_isUsingBookmark
                 ? null
                 : const Center(child: LinearProgressIndicator(minHeight: 2)),
           ),
@@ -147,7 +196,9 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
       child: LetterTile(
         letter: letter,
         unlocked: profile.hasLetter(letter),
+        tier: profile.tier,
         onTap: () => _showLetterWords(letter),
+        onUseBookmark: profile.bookmarks > 0 ? () => _useBookmark(letter) : null,
       ),
     );
   }

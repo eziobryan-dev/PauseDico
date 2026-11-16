@@ -25,7 +25,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.pausedico.app"
+        // Package name registered on the Play Console (cannot be changed there)
+        applicationId = "com.toutai.pausedico"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 
-/// A letter of the alphabet collection: grey while locked, gold with a moving
-/// shine once at least one word starting with it was discovered
+import '../core/theme/tier_colors.dart';
+import '../models/alphabet_tier_model.dart';
+import 'bookmark_art.dart';
+
+/// A letter of the Alphadex: grey while locked, gold (or emerald) with a
+/// moving shine once unlocked. A locked letter shows a small bookmark when
+/// one can unlock it ([onUseBookmark]).
 class LetterTile extends StatefulWidget {
   final String letter;
   final bool unlocked;
+  final AlphabetTier tier;
   final VoidCallback? onTap;
+  final VoidCallback? onUseBookmark;
 
   const LetterTile({
     super.key,
     required this.letter,
     required this.unlocked,
+    required this.tier,
     this.onTap,
+    this.onUseBookmark,
   });
 
   @override
@@ -20,14 +29,6 @@ class LetterTile extends StatefulWidget {
 
 class _LetterTileState extends State<LetterTile>
     with SingleTickerProviderStateMixin {
-  static const _gold = [
-    Color(0xFFB8860B),
-    Color(0xFFFFD700),
-    Color(0xFFFFF8DC),
-    Color(0xFFFFD700),
-    Color(0xFFB8860B),
-  ];
-
   late final AnimationController _shine = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2400),
@@ -64,28 +65,41 @@ class _LetterTileState extends State<LetterTile>
     );
 
     final text = FittedBox(child: Text(widget.letter, style: style));
+    final canUseBookmark = !widget.unlocked && widget.onUseBookmark != null;
 
     return InkWell(
-      onTap: widget.unlocked ? widget.onTap : null,
+      onTap: widget.unlocked ? widget.onTap : widget.onUseBookmark,
       borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: widget.unlocked
-            ? AnimatedBuilder(
-                animation: _shine,
-                child: text,
-                builder: (context, child) => ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  // A light band sweeping across the gold
-                  shaderCallback: (bounds) => LinearGradient(
-                    begin: Alignment(-1 + 3 * _shine.value - 1, -0.5),
-                    end: Alignment(1 + 3 * _shine.value - 1, 0.5),
-                    colors: _gold,
-                  ).createShader(bounds),
-                  child: child,
-                ),
-              )
-            : text,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: widget.unlocked
+                  ? AnimatedBuilder(
+                      animation: _shine,
+                      child: text,
+                      builder: (context, child) => ShaderMask(
+                        blendMode: BlendMode.srcIn,
+                        // A light band sweeping across the letter
+                        shaderCallback: (bounds) => LinearGradient(
+                          begin: Alignment(-1 + 3 * _shine.value - 1, -0.5),
+                          end: Alignment(1 + 3 * _shine.value - 1, 0.5),
+                          colors: TierColors.shine(widget.tier),
+                        ).createShader(bounds),
+                        child: child,
+                      ),
+                    )
+                  : text,
+            ),
+          ),
+          if (canUseBookmark)
+            Positioned(
+              top: 2,
+              right: 6,
+              child: BookmarkArt(tier: widget.tier, size: 22),
+            ),
+        ],
       ),
     );
   }

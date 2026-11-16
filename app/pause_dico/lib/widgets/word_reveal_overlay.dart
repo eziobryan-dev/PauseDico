@@ -1,30 +1,47 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_theme.dart';
 import '../models/daily_word_reveal_model.dart';
 import '../models/reward_summary_model.dart';
+import 'bookmark_assembled_step.dart';
+import 'emerald_alphadex_view.dart';
 import 'error_banner.dart';
 import 'fade_in.dart';
+import 'fragment_found_step.dart';
+import 'green_action_button.dart';
 import 'pop_in.dart';
 import 'reward_summary_view.dart';
+import 'rewarded_skip_button.dart';
 import 'skip_word_button.dart';
 import 'word_card.dart';
+import 'words_milestone_step.dart';
 
-/// Full-screen dark overlay revealing the daily word, in two steps:
+/// Steps of the reveal overlay, after the word card (each one optional)
+enum _RevealStep { milestone, fragment, bookmark, rewards, emerald }
+
+/// Full-screen dark overlay revealing the daily word:
 /// 1. the word's card pops in, with "Valider ce mot" and "Je veux un autre mot";
-/// 2. once validated, the rewards earned (reveal, streak, letters…) fade in
-///    one row per second, and "Merci !" closes the overlay.
-/// Without rewards, "Valider ce mot" closes it directly.
+/// 2. once validated, one popup per highlight: words milestone, bookmark
+///    fragment found, bookmark assembled;
+/// 3. the rewards earned fade in one row per second;
+/// 4. the emerald Alphadex congratulations, if the gold one was just completed.
+/// Without anything to show, "Valider ce mot" closes it directly.
 class WordRevealOverlay extends StatefulWidget {
   final DailyWordRevealModel initialReveal;
   final Future<DailyWordRevealModel> Function() onSkip;
   final Future<bool> Function(int wordId, bool liked) onLikeChanged;
+
+  /// Without skips left: whether a rewarded ad can give one, and the action
+  /// showing it (null when the ad was not watched until the reward)
+  final Future<bool> Function() canWatchAdForSkip;
+  final Future<RewardSummaryModel?> Function() onWatchAdForSkip;
 
   const WordRevealOverlay({
     super.key,
     required this.initialReveal,
     required this.onSkip,
     required this.onLikeChanged,
+    required this.canWatchAdForSkip,
+    required this.onWatchAdForSkip,
   });
 
   /// Shows the overlay and returns the word kept by the user
@@ -33,6 +50,8 @@ class WordRevealOverlay extends StatefulWidget {
     required DailyWordRevealModel reveal,
     required Future<DailyWordRevealModel> Function() onSkip,
     required Future<bool> Function(int wordId, bool liked) onLikeChanged,
+    required Future<bool> Function() canWatchAdForSkip,
+    required Future<RewardSummaryModel?> Function() onWatchAdForSkip,
   }) {
     return showGeneralDialog<DailyWordRevealModel>(
       context: context,
@@ -43,6 +62,8 @@ class WordRevealOverlay extends StatefulWidget {
         initialReveal: reveal,
         onSkip: onSkip,
         onLikeChanged: onLikeChanged,
+        canWatchAdForSkip: canWatchAdForSkip,
+        onWatchAdForSkip: onWatchAdForSkip,
       ),
     );
   }
@@ -59,9 +80,55 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
   /// Everything earned since the reveal (a skip can unlock a letter too)
   late RewardSummaryModel? _rewards = widget.initialReveal.rewards;
 
+  /// Steps left after the word card, the current one first (empty: word card)
+  List<_RevealStep> _steps = const [];
+
   bool _isSkipping = false;
-  bool _showsRewards = false;
+  bool _canWatchAd = false;
+  bool _isWatchingAd = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshCanWatchAd();
+  }
+
+  /// The rewarded ad is only offered once the skips are used up
+  Future<void> _refreshCanWatchAd() async {
+    if (_reveal.skipsLeft > 0) return;
+    try {
+      final canWatch = await widget.canWatchAdForSkip();
+      if (mounted) setState(() => _canWatchAd = canWatch);
+    } catch (e) {
+      // Not blocking: no ad offered
+    }
+  }
+
+  Future<void> _watchAdForSkip() async {
+    setState(() {
+      _isWatchingAd = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final rewards = await widget.onWatchAdForSkip();
+      if (!mounted) return;
+      setState(() {
+        if (rewards == null) {
+          _errorMessage = 'Pub indisponible ou interrompue : pas de skip cette fois.';
+        } else {
+          _reveal = _reveal.copyWith(skipsLeft: rewards.nbSkip);
+          _rewards = _rewards?.merge(rewards) ?? rewards;
+          _canWatchAd = false;
+        }
+      });
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = "Impossible d'obtenir le skip.");
+    } finally {
+      if (mounted) setState(() => _isWatchingAd = false);
+    }
+  }
 
   Future<void> _skip() async {
     setState(() {
@@ -76,6 +143,7 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
         _reveal = reveal;
         _rewards = _rewards?.merge(reveal.rewards) ?? reveal.rewards;
       });
+      _refreshCanWatchAd();
     } catch (e) {
       if (mounted) {
         setState(() => _errorMessage = 'Impossible de changer de mot.');
@@ -95,13 +163,30 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
     return saved;
   }
 
-  /// Step 1 -> step 2 (rewards), or close when there is nothing to show
+  /// Word card -> the steps worth showing, or close when there is none
   void _validateWord() {
     final rewards = _rewards;
-    if (rewards == null || rewards.isEmpty) {
+    final steps = rewards == null || rewards.isEmpty
+        ? <_RevealStep>[]
+        : [
+            if (rewards.wordsMilestone != null) _RevealStep.milestone,
+            if (rewards.totalFragments > 0) _RevealStep.fragment,
+            if (rewards.totalBookmarks > 0) _RevealStep.bookmark,
+            _RevealStep.rewards,
+            if (rewards.emeraldUnlocked || rewards.emeraldCompleted) _RevealStep.emerald,
+          ];
+    if (steps.isEmpty) {
       _close();
     } else {
-      setState(() => _showsRewards = true);
+      setState(() => _steps = steps);
+    }
+  }
+
+  void _nextStep() {
+    if (_steps.length <= 1) {
+      _close();
+    } else {
+      setState(() => _steps = _steps.sublist(1));
     }
   }
 
@@ -109,6 +194,7 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final step = _steps.firstOrNull;
     return Material(
       type: MaterialType.transparency,
       child: SafeArea(
@@ -117,7 +203,10 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
             padding: const EdgeInsets.all(24.0),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
-              child: _showsRewards ? _buildRewardsStep() : _buildWordStep(),
+              child: KeyedSubtree(
+                key: ValueKey(step),
+                child: step == null ? _buildWordStep() : _buildStep(step),
+              ),
             ),
           ),
         ),
@@ -125,9 +214,33 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
     );
   }
 
+  Widget _buildStep(_RevealStep step) {
+    final rewards = _rewards!;
+    return switch (step) {
+      _RevealStep.milestone => WordsMilestoneStep(
+          words: rewards.wordsMilestone?.words ?? rewards.nbWords,
+          onContinue: _nextStep,
+        ),
+      _RevealStep.fragment => FragmentFoundStep(
+          tier: rewards.bookmarkTier,
+          count: rewards.totalFragments,
+          fragmentsHeld: rewards.totalBookmarks > 0 ? null : rewards.bookmarkFragments,
+          onContinue: _nextStep,
+        ),
+      _RevealStep.bookmark => BookmarkAssembledStep(
+          tier: rewards.bookmarkTier,
+          onContinue: _nextStep,
+        ),
+      _RevealStep.rewards => _buildRewardsStep(rewards),
+      _RevealStep.emerald => EmeraldAlphadexView(
+          completed: rewards.emeraldCompleted,
+          onContinue: _nextStep,
+        ),
+    };
+  }
+
   Widget _buildWordStep() {
     return Column(
-      key: const ValueKey('word-step'),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -144,25 +257,31 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
           ErrorBanner(message: _errorMessage!),
           const SizedBox(height: 12),
         ],
-        _GreenButton(
+        GreenActionButton(
           label: 'Valider ce mot',
-          onPressed: _isSkipping ? null : _validateWord,
+          onPressed: _isSkipping || _isWatchingAd ? null : _validateWord,
         ),
         const SizedBox(height: 12),
         SkipWordButton(
           skipsLeft: _reveal.skipsLeft,
           onPressed: _isSkipping ? null : _skip,
         ),
+        if (_reveal.skipsLeft == 0 && _canWatchAd) ...[
+          const SizedBox(height: 4),
+          RewardedSkipButton(
+            isBusy: _isWatchingAd,
+            onPressed: _isSkipping ? null : _watchAdForSkip,
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildRewardsStep() {
-    final rewards = _rewards!;
+  Widget _buildRewardsStep(RewardSummaryModel rewards) {
     final theme = Theme.of(context);
+    final isLast = _steps.length <= 1;
 
     return Column(
-      key: const ValueKey('rewards-step'),
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -179,29 +298,8 @@ class _WordRevealOverlayState extends State<WordRevealOverlay> {
         const SizedBox(height: 16),
         RewardSummaryView(rewards: rewards, rowInterval: _rewardRowInterval),
         const SizedBox(height: 24),
-        _GreenButton(label: 'Merci !', onPressed: _close),
+        GreenActionButton(label: isLast ? 'Merci !' : 'Continuer', onPressed: _nextStep),
       ],
-    );
-  }
-}
-
-/// Full-width green call-to-action of the reveal overlay
-class _GreenButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-
-  const _GreenButton({required this.label, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.success,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-      ),
-      onPressed: onPressed,
-      child: Text(label),
     );
   }
 }

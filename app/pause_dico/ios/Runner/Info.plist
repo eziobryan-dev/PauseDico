@@ -39,6 +39,20 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- AdMob app id: Google's TEST id, replace it with the real one before publishing -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<!-- App Tracking Transparency prompt (shown through the AdMob consent message) -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Cet identifiant sert à afficher des publicités plus pertinentes, qui financent Pause Dico.</string>
+	<!-- Google's ad network, for ad attribution without tracking -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_theme.dart';
+import '../core/theme/tier_colors.dart';
 import '../models/reward_summary_model.dart';
 import '../services/level_service.dart';
 import 'fade_in.dart';
@@ -69,6 +70,21 @@ class _RewardSummaryViewState extends State<RewardSummaryView> {
                         label: '+${rewards.events[i].skips} skip'
                             '${rewards.events[i].skips > 1 ? 's' : ''}',
                         color: AppColors.success,
+                      ),
+                    ],
+                    if (rewards.events[i].fragments > 0) ...[
+                      const SizedBox(width: 6),
+                      _Gain(
+                        label: '+${rewards.events[i].fragments} fragment'
+                            '${rewards.events[i].fragments > 1 ? 's' : ''}',
+                        color: TierColors.dark(rewards.events[i].tier),
+                      ),
+                    ],
+                    if (rewards.events[i].bookmarks > 0) ...[
+                      const SizedBox(width: 6),
+                      _Gain(
+                        label: '+${rewards.events[i].bookmarks} marque-page',
+                        color: TierColors.dark(rewards.events[i].tier),
                       ),
                     ],
                   ],
