@@ -10,6 +10,7 @@ import '../repositories/user_repository.dart';
 import '../services/ad_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
+import '../widgets/definitions_credit.dart';
 import '../widgets/level_card.dart';
 import '../widgets/notification_toggle_card.dart';
 import '../widgets/theme_toggle_card.dart';
@@ -247,6 +248,8 @@ class _UserScreenState extends State<UserScreen> {
             icon: const Icon(Icons.logout),
             label: const Text('Se déconnecter'),
           ),
+          const SizedBox(height: 32),
+          const DefinitionsCredit(),
         ],
       ),
     );

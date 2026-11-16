@@ -8,6 +8,8 @@ abstract class AppConstants {
 
   // External Links
   static const String wiktionaryBaseUrl = 'https://fr.wiktionary.org/wiki/';
+  static const String definitionsLicenseUrl =
+      'https://creativecommons.org/licenses/by-sa/4.0/deed.fr';
 
   // Supabase Credentials
   static const String supabaseUrl = 'https://dekiorcmhkijfuiibohz.supabase.co';
