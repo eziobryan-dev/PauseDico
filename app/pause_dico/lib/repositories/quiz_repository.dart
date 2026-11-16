@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants/app_constants.dart';
 import '../core/utils/date_helpers.dart';
 import '../models/quiz_answer_model.dart';
+import '../models/quiz_result_model.dart';
 import '../models/quiz_session_model.dart';
 import '../models/special_quiz_model.dart';
 
@@ -44,6 +45,22 @@ class QuizRepository {
       },
     );
     return QuizSessionModel.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Result of the first completion of a quiz, null if never completed
+  Future<QuizResultModel?> getResult(QuizKind kind, DateTime refDate) async {
+    if (_client.auth.currentUser == null) return null;
+
+    final response = await _client.rpc(
+      AppConstants.getQuizResultRpc,
+      params: {
+        'p_kind': kind.dbValue,
+        'p_ref_date': DateHelpers.toIsoDateString(refDate),
+      },
+    );
+    return response == null
+        ? null
+        : QuizResultModel.fromJson(response as Map<String, dynamic>);
   }
 
   /// Answers question [index] (0-based, in order) with [wordId]

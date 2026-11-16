@@ -4,10 +4,11 @@ import '../core/theme/app_theme.dart';
 import '../models/quiz_result_model.dart';
 import '../models/reward_summary_model.dart';
 import 'pop_in.dart';
+import 'quiz_rating_stars.dart';
 import 'reward_summary_view.dart';
 
 /// End-of-quiz popup: rating title, colored score and stars.
-/// Returns true when the user wants to play again.
+/// A finished quiz cannot be replayed: its result shows on the home card.
 class QuizResultDialog extends StatelessWidget {
   final QuizResultModel result;
 
@@ -23,13 +24,13 @@ class QuizResultDialog extends StatelessWidget {
     this.noRewardMessage = 'Récompenses déjà obtenues pour ce quiz',
   });
 
-  static Future<bool?> show(
+  static Future<void> show(
     BuildContext context,
     QuizResultModel result, {
     RewardSummaryModel? rewards,
     String? noRewardMessage,
   }) {
-    return showDialog<bool>(
+    return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => noRewardMessage == null
@@ -84,19 +85,7 @@ class QuizResultDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    Icon(
-                      i < rating.stars ? Icons.star_rounded : Icons.star_outline_rounded,
-                      size: 36,
-                      color: i < rating.stars
-                          ? AppColors.warning
-                          : theme.colorScheme.outlineVariant,
-                    ),
-                ],
-              ),
+              QuizRatingStars(rating: rating),
               const SizedBox(height: 12),
               // Score counting up
               TweenAnimationBuilder<int>(
@@ -129,23 +118,12 @@ class QuizResultDialog extends StatelessWidget {
                       )
                     : RewardSummaryView(rewards: rewards),
               const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Terminer'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      icon: const Icon(Icons.replay),
-                      label: const Text('Rejouer'),
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Terminer'),
+                ),
               ),
             ],
           ),

@@ -26,7 +26,7 @@ Tables (schéma `public`, RLS activé partout) :
 | `user_daily_choice` | `user_id` → `user.id`, `date`, `word_ids` (bigint[3]), `mystery_word_id` | PK (`user_id`, `date`). Les 3 mots candidats proposés au user ce jour-là (non re-tirables). Accessible uniquement via les RPC |
 
 Mot du jour : chaque user choisit parmi 3 candidats personnels, dont seul le thème est affiché.
-Les 3 mots sont tirés côté serveur (`pick_daily_choices`) parmi les mots jamais eus par le user : tirage aléatoire pondéré par `pick_weight` (clés Efraimidis-Spirakis, un seul scan qui garde les 50 meilleures clés), puis passe gloutonne garantissant au moins 2 thèmes différents.
+Les 3 mots sont tirés côté serveur (`pick_daily_choices`) parmi les mots jamais eus par le user : tirage aléatoire pondéré par `pick_weight` (clés Efraimidis-Spirakis, un seul scan qui garde les 50 meilleures clés), puis passe gloutonne garantissant 3 thèmes différents.
 Au plus une fois tous les 7 jours, l'un des 3 est une « lettre mystère » : un mot commençant par une lettre pas encore découverte par le user.
 
 Gamification (tout est calculé côté serveur, dans les RPC ci-dessous, via `grant_reward`) :
@@ -40,9 +40,10 @@ Gamification (tout est calculé côté serveur, dans les RPC ci-dessous, via `gr
 Toutes les écritures passent par des RPC (security definer) :
 - `get_daily_choices(p_date)` : renvoie les 3 candidats `[{id, theme}]` (la lettre mystère n'est jamais signalée au client), tirés une fois par jour et stockés dans `user_daily_choice`.
 - `reveal_daily_word(p_date, p_word_id)` : enregistre le candidat choisi dans l'historique (idempotent, refuse un mot hors des choix), incrémente `nb_words`, donne les récompenses (reveal, série, lettre), renvoie `{word, nb_skip, liked, rewards: {events, profile}}`.
-- `skip_daily_word(p_date)` : consomme un skip (`nb_skip`) et remplace le mot du jour par un mot aléatoire jamais vu (retire le like éventuel, incrémente `word.nb_skip` du mot remplacé et recalcule son `pick_weight`). Le nouveau mot peut débloquer une lettre. Renvoie aussi `rewards`.
+- `skip_daily_word(p_date)` : consomme un skip (`nb_skip`) et remplace le mot du jour par un mot aléatoire jamais vu (retire le like éventuel, incrémente `word.nb_skip` du mot remplacé et recalcule son `pick_weight`). `letters_mask` est recalculé depuis l'historique sans le mot skippé (`history_letters_mask`) : sa lettre est reperdue si aucun autre mot ne la porte (sans reprendre l'XP ; la récompense d'une lettre n'est jamais redonnée). Le nouveau mot peut débloquer une lettre. Renvoie aussi `rewards`.
 - `get_pending_special_quizzes(p_date)` : quiz du mois / de l'année en attente `[{kind, due_date}]`. Calculé à la volée (`special_quiz_due_date` : dernière échéance inscription + k × période où le user avait assez de mots), donc un quiz reste disponible tant qu'il n'est pas complété, même si le user ne s'est pas connecté le jour J.
-- `start_quiz(p_date, p_kind, p_ref_date)` : reprend la session non terminée de ce quiz s'il y en a une (mêmes questions, réponses déjà données, `answered` / `score` : anti-triche, on ne peut pas recommencer pour réessayer), sinon crée une `quiz_session` (hebdo : dimanche `p_ref_date`, mots du lundi au samedi ; mois / année : échéance en attente, mots au hasard sur la période, likés en priorité). Renvoie les questions (définition, thème du mot en indice, options) sans les réponses. Au-delà de 10 mots (année), chaque question propose le bon mot + 9 autres.
+- `start_quiz(p_date, p_kind, p_ref_date)` : reprend la session non terminée de ce quiz s'il y en a une (mêmes questions, réponses déjà données, `answered` / `score` : anti-triche, on ne peut pas recommencer pour réessayer), sinon crée une `quiz_session` (hebdo : dimanche `p_ref_date`, mots du lundi au samedi ; mois / année : échéance en attente, mots au hasard sur la période, likés en priorité). Renvoie les questions (définition, thème du mot en indice, options) sans les réponses. Nombre de questions : hebdo 6, mois 15, année 50 (`quiz_rules.nb_words`). Au-delà de 10 mots (mois / année), chaque question propose le bon mot + 9 autres.
+- `get_quiz_result(p_kind, p_ref_date)` : score du 1er passage terminé d'un quiz (`{score, total, completed_at}`, null sinon). Un quiz terminé n'est plus rejouable depuis l'app : la card du Quiz hebdo affiche son résultat (`QuizDoneCard`).
 - `answer_quiz_question(p_session_id, p_index, p_word_id)` : répond aux questions dans l'ordre, renvoie la bonne réponse ; à la dernière, calcule le score, donne les récompenses du 1er passage et marque le quiz spécial comme complété (`user_special_quiz`).
 - `set_word_liked(p_word_id, p_liked)` : like / unlike (idempotent), recalcule `nb_likes` et `pick_weight` sous verrou de ligne (pas de mise à jour perdue en concurrence), renvoie l'état enregistré.
 
@@ -70,8 +71,7 @@ app/pause_dico/          App Flutter
 data/                    Scripts Python de génération et d'import du dictionnaire
   generate_dico.py       Extraction des mots/définitions depuis le Wiktionnaire → pause_dico.json
   add_types.py           Ajout de la nature grammaticale via l'API Wiktionnaire
-  json_to_supabase.py    Import (upsert par lots) de pause_dico.json dans la table `word`
-```
+  json_to_supabase.py    Import (upsert par lots) de pause_dico.json dans la table `word````
 
 Commandes utiles (depuis `app/pause_dico/`) :
 

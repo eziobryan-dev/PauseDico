@@ -33,6 +33,7 @@ abstract class AppConstants {
   static const String getPendingSpecialQuizzesRpc = 'get_pending_special_quizzes';
   static const String startQuizRpc = 'start_quiz';
   static const String answerQuizQuestionRpc = 'answer_quiz_question';
+  static const String getQuizResultRpc = 'get_quiz_result';
 
   // Quiz
   static const Duration quizNextQuestionDelay = Duration(milliseconds: 1500);
@@ -56,6 +57,10 @@ abstract class AppConstants {
   static const String dailyNotificationEnabledKey = 'daily_notification_enabled';
   static const String darkThemeKey = 'dark_theme';
   static const String onboardingDoneKey = 'onboarding_done';
+
+  // Ads
+  /// Share of the home screen height taken by the ad, at the bottom
+  static const double homeAdHeightRatio = 0.25;
 
   // Theme
   static const Duration darkThemeSaveDebounce = Duration(milliseconds: 600);

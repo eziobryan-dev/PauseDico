@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_constants.dart';
 import '../core/utils/context_extensions.dart';
 import '../core/utils/date_helpers.dart';
+import '../models/quiz_result_model.dart';
 import '../models/special_quiz_model.dart';
 import '../models/user_word_history_model.dart';
 import '../models/word_model.dart';
@@ -12,11 +13,13 @@ import '../repositories/user_repository.dart';
 import '../repositories/user_word_history_repository.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
+import '../widgets/ad_slot.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/date_navigator.dart';
 import '../widgets/empty_word_card.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/glowing_quiz_button.dart';
+import '../widgets/quiz_done_card.dart';
 import '../widgets/screen_title.dart';
 import '../widgets/word_card.dart';
 import '../widgets/theme_choice_overlay.dart';
@@ -47,6 +50,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   DateTime _lastLoadedAt = DateTime.now();
   UserWordHistoryModel? _dailyEntry;
   List<WordModel> _weeklyWords = [];
+  /// Result of the selected Sunday's weekly quiz, null until completed
+  QuizResultModel? _weeklyResult;
   List<SpecialQuizModel> _pendingQuizzes = [];
   bool _isLoading = true;
   bool _isRevealing = false;
@@ -151,17 +156,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         date,
         forceRefresh: forceRefresh,
       );
-      final weeklyWords = date.weekday == DateTime.sunday
+      final isSunday = date.weekday == DateTime.sunday;
+      final weeklyWords = isSunday
           ? await _historyRepository.getWeekWords(
               date,
               forceRefresh: forceRefresh,
             )
           : <WordModel>[];
+      final weeklyResult = isSunday
+          ? await _quizRepository.getResult(QuizKind.weekly, date)
+          : null;
 
       if (!mounted) return;
       setState(() {
         _dailyEntry = entry;
         _weeklyWords = weeklyWords;
+        _weeklyResult = weeklyResult;
       });
     } catch (e) {
       if (!mounted) return;
@@ -241,13 +251,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _fetchUserAndLoadWord();
   }
 
-  void _openWeeklyQuiz() {
-    Navigator.of(context).push(
+  Future<void> _openWeeklyQuiz() async {
+    final date = _selectedDate;
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            QuizScreen(kind: QuizKind.weekly, refDate: _selectedDate),
+        builder: (context) => QuizScreen(kind: QuizKind.weekly, refDate: date),
       ),
     );
+    // Completed: the card now shows the result
+    final result = await _quizRepository.getResult(QuizKind.weekly, date);
+    if (mounted && _selectedDate == date) setState(() => _weeklyResult = result);
   }
 
   Future<void> _openSpecialQuiz(SpecialQuizModel quiz) async {
@@ -311,29 +324,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () {
-          _loadPendingQuizzes();
-          return _loadWordForDate(_selectedDate, forceRefresh: true);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              DateNavigator(
-                date: _selectedDate,
-                firstDate: _userCreatedAt ?? _selectedDate,
-                canGoPrevious: _canGoPrevious,
-                canGoNext: _canGoNext,
-                onChangeDay: _changeDate,
-                onPickDate: _goToDate,
-              ),
-              const SizedBox(height: 24),
-              _buildContent(),
-            ],
-          ),
+      // The ad takes the bottom quarter of the screen, the content scrolls above
+      body: LayoutBuilder(
+        builder: (context, constraints) => Column(
+          children: [
+            Expanded(child: _buildScrollableContent()),
+            SizedBox(
+              height: constraints.maxHeight * AppConstants.homeAdHeightRatio,
+              child: const SafeArea(top: false, child: AdSlot()),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScrollableContent() {
+    return RefreshIndicator(
+      onRefresh: () {
+        _loadPendingQuizzes();
+        return _loadWordForDate(_selectedDate, forceRefresh: true);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DateNavigator(
+              date: _selectedDate,
+              firstDate: _userCreatedAt ?? _selectedDate,
+              canGoPrevious: _canGoPrevious,
+              canGoNext: _canGoNext,
+              onChangeDay: _changeDate,
+              onPickDate: _goToDate,
+            ),
+            const SizedBox(height: 24),
+            _buildContent(),
+          ],
         ),
       ),
     );
@@ -359,6 +387,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     if (_isSunday) {
+      if (_weeklyResult case final result?) {
+        return QuizDoneCard(title: QuizKind.weekly.title, result: result);
+      }
       final canPlay = _weeklyWords.length >= AppConstants.weeklyQuizMinWords;
       return FeatureCard(
         icon: Icons.star,

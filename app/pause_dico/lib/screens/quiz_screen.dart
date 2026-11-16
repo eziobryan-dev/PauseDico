@@ -152,7 +152,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _showResult(QuizAnswerModel answer) async {
-    final playAgain = await QuizResultDialog.show(
+    await QuizResultDialog.show(
       context,
       QuizResultModel(
         score: answer.score ?? _score,
@@ -163,13 +163,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ? 'Les quiz des semaines passées ne rapportent pas de récompenses'
           : null,
     );
-    if (!mounted) return;
-
-    if (playAgain == true) {
-      _startQuiz();
-    } else {
-      Navigator.of(context).pop();
-    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   QuizAnswerState _stateOf(QuizOptionModel option) {
