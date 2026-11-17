@@ -62,4 +62,11 @@ class AuthRepository {
 
   /// Sign Out
   Future<void> signOut() => _client.auth.signOut();
+
+  /// Permanently deletes the account and all its data on the server, then
+  /// clears the local session (the server one no longer exists).
+  Future<void> deleteAccount() async {
+    await _client.rpc(AppConstants.deleteMyAccountRpc);
+    await _client.auth.signOut(scope: SignOutScope.local);
+  }
 }

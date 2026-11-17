@@ -11,6 +11,7 @@ import '../services/ad_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/definitions_credit.dart';
+import '../widgets/delete_account_dialog.dart';
 import '../widgets/level_card.dart';
 import '../widgets/notification_toggle_card.dart';
 import '../widgets/theme_toggle_card.dart';
@@ -38,6 +39,7 @@ class _UserScreenState extends State<UserScreen> {
   bool _isSavingUsername = false;
   bool _notificationEnabled = false;
   bool _isSavingNotification = false;
+  bool _isDeletingAccount = false;
 
   /// Europe (RGPD): the user must be able to change their ad consent
   bool _privacyOptionsRequired = false;
@@ -167,12 +169,33 @@ class _UserScreenState extends State<UserScreen> {
     }
   }
 
-  Future<void> _handleSignOut() async {
-    // The reminder belongs to the signed-in user
+  /// The reminder and the theme belong to the signed-in user
+  Future<void> _resetLocalUserState() async {
     await NotificationService.disableDaily();
     ThemeService.reset();
+  }
+
+  Future<void> _handleSignOut() async {
+    await _resetLocalUserState();
     await _authRepository.signOut();
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    if (!await DeleteAccountDialog.show(context)) return;
+
+    setState(() => _isDeletingAccount = true);
+    try {
+      await _authRepository.deleteAccount();
+      await _resetLocalUserState();
+      if (!mounted) return;
+      context.showSnackBar('Votre compte a été supprimé.');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isDeletingAccount = false);
+      context.showSnackBar('Impossible de supprimer le compte. Réessaie plus tard.');
+    }
   }
 
   @override
@@ -247,6 +270,19 @@ class _UserScreenState extends State<UserScreen> {
             onPressed: _handleSignOut,
             icon: const Icon(Icons.logout),
             label: const Text('Se déconnecter'),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: _isDeletingAccount ? null : _handleDeleteAccount,
+            child: _isDeletingAccount
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Supprimer mon compte'),
           ),
           const SizedBox(height: 32),
           const DefinitionsCredit(),

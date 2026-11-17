@@ -51,6 +51,7 @@ Toutes les écritures passent par des RPC (security definer) :
 - `can_claim_ad_skip(p_date)` / `claim_ad_skip(p_date)` : pub récompensée regardée → +1 skip (récompense `source = 'ad'`, `ref` = date : une fois par jour, et seulement sous le plafond du stock). Le client appelle `claim_ad_skip` après le callback « reward » du SDK AdMob ; une vérification côté serveur (SSV AdMob → Edge Function) reste à faire pour bloquer un appel direct.
 - `use_bookmark(p_date, p_letter)` : consomme un marque-page pour débloquer une lettre grise du palier en cours (bit dans `gold_bookmark_mask` ou `emerald_bookmark_mask`), donne la récompense de la lettre (et éventuellement de l'Alphadex complet). Renvoie `{events, profile}`.
 - `set_word_liked(p_word_id, p_liked)` : like / unlike (idempotent), recalcule `nb_likes` et `pick_weight` sous verrou de ligne (pas de mise à jour perdue en concurrence), renvoie l'état enregistré.
+- `delete_my_account()` : supprime définitivement le compte (`auth.users`, tout le reste suit par cascade), puis recalcule `nb_likes` / `pick_weight` des mots que le user likait. Bouton « Supprimer mon compte » du profil (exigé par Google Play). Règles de confidentialité publiées depuis [docs/index.html](docs/index.html) (GitHub Pages ; section `#suppression` = URL de suppression des données de la Play Console).
 
 ## Architecture
 

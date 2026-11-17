@@ -39,6 +39,7 @@ abstract class AppConstants {
   static const String canClaimAdSkipRpc = 'can_claim_ad_skip';
   static const String claimAdSkipRpc = 'claim_ad_skip';
   static const String useBookmarkRpc = 'use_bookmark';
+  static const String deleteMyAccountRpc = 'delete_my_account';
 
   // Bookmarks (mirror bookmark_rules() on the server)
   static const int fragmentsPerBookmark = 7;
