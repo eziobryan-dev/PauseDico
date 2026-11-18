@@ -90,8 +90,9 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
     );
   }
 
-  /// Locked letter + a bookmark: confirm, then unlock it on the server
-  Future<void> _useBookmark(String letter) async {
+  /// Locked letter + a bookmark: confirm (the dialog shows the letter at
+  /// [tileSize], as it will look), then unlock it on the server
+  Future<void> _useBookmark(String letter, Size tileSize) async {
     final profile = _profile;
     if (profile == null || _isUsingBookmark) return;
 
@@ -100,6 +101,7 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
       letter: letter,
       tier: profile.tier,
       bookmarksLeft: profile.bookmarks,
+      tileSize: tileSize,
     );
     if (!confirmed || !mounted) return;
 
@@ -191,12 +193,16 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
     if (letter == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: LetterTile(
-        letter: letter,
-        unlocked: profile.hasLetter(letter),
-        tier: profile.tier,
-        onTap: () => _showLetterWords(letter),
-        onUseBookmark: profile.bookmarks > 0 ? () => _useBookmark(letter) : null,
+      child: LayoutBuilder(
+        builder: (context, constraints) => LetterTile(
+          letter: letter,
+          unlocked: profile.hasLetter(letter),
+          tier: profile.tier,
+          onTap: () => _showLetterWords(letter),
+          onUseBookmark: profile.bookmarks > 0
+              ? () => _useBookmark(letter, constraints.biggest)
+              : null,
+        ),
       ),
     );
   }

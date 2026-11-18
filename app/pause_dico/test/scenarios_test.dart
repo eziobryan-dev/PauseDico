@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pause_dico/debug/debug_scenarios.dart';
 import 'package:pause_dico/debug/fake_words.dart';
 import 'package:pause_dico/models/alphabet_tier_model.dart';
+import 'package:pause_dico/widgets/bookmark_art.dart';
 import 'package:pause_dico/widgets/letter_tile.dart';
+import 'package:pause_dico/widgets/quiz_rating_stars.dart';
 import 'package:pause_dico/widgets/theme_choice_tag.dart';
 
 import 'helpers/scenario_harness.dart';
@@ -29,6 +31,27 @@ Future<void> playQuiz(WidgetTester tester, {required int questions, int? rightAn
             );
     await tapAndSettle(tester, answer, const Duration(seconds: 3));
   }
+}
+
+/// The bookmark dialog shows [letter] as an unlocked Alphadex tile of [tier],
+/// the same size as the grid's tiles, without the bookmark drawing nor title
+void expectDialogLetter(WidgetTester tester, String letter, AlphabetTier tier) {
+  final inDialog = find.descendant(
+    of: find.byType(AlertDialog),
+    matching: find.byType(LetterTile),
+  );
+  final tile = tester.widget<LetterTile>(inDialog);
+  expect(tile.letter, letter);
+  expect(tile.unlocked, isTrue);
+  expect(tile.tier, tier);
+
+  final gridTile = find.byWidgetPredicate((w) => w is LetterTile && w.letter == 'A').first;
+  expect(tester.getSize(inDialog), tester.getSize(gridTile));
+  expect(find.text('Lettre $letter'), findsNothing);
+  expect(
+    find.descendant(of: find.byType(AlertDialog), matching: find.byType(BookmarkArt)),
+    findsNothing,
+  );
 }
 
 void main() {
@@ -136,6 +159,16 @@ void main() {
     expect(find.text('Commencer le quiz'), findsNothing);
   });
 
+  testWidgets('sunday_done : la card du quiz terminé montre le score, sans titre ni étoiles',
+      (tester) async {
+    await pumpScenario(tester, 'sunday_done');
+
+    expect(find.text('Quiz terminé'), findsOneWidget);
+    expect(find.text('5 / 6'), findsOneWidget);
+    expect(find.text('Quiz hebdo'), findsNothing);
+    expect(find.byType(QuizRatingStars), findsNothing);
+  });
+
   testWidgets('quiz_resume : le quiz reprend à la question 4', (tester) async {
     await pumpScenario(tester, 'quiz_resume');
 
@@ -153,12 +186,24 @@ void main() {
       tester,
       find.byWidgetPredicate((w) => w is LetterTile && w.letter == 'Z'),
     );
+    expectDialogLetter(tester, 'Z', AlphabetTier.gold);
     await tester.tap(find.text('Débloquer'));
     await settle(tester, const Duration(seconds: 1));
 
     expect(find.text('Lettre Z débloquée ! +20 XP'), findsOneWidget);
     expect(backend.profile.hasLetter('Z'), isTrue);
     expect(backend.profile.bookmarks, 1);
+  });
+
+  testWidgets("emerald : la modale montre la lettre en émeraude", (tester) async {
+    final backend = await pumpScenario(tester, 'emerald');
+    expect(backend.profile.hasLetter('Z'), isFalse);
+
+    await tapAndSettle(
+      tester,
+      find.byWidgetPredicate((w) => w is LetterTile && w.letter == 'Z'),
+    );
+    expectDialogLetter(tester, 'Z', AlphabetTier.emerald);
   });
 
   testWidgets('notebook : la recherche ignore les accents', (tester) async {

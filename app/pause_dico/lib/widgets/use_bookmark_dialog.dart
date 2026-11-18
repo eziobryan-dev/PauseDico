@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../models/alphabet_tier_model.dart';
-import 'bookmark_art.dart';
+import 'letter_tile.dart';
 
 /// "Voulez-vous débloquer cette lettre en utilisant un marque-page ?"
-/// Returns true when confirmed.
+/// Shows the letter as it will look once unlocked: the Alphadex tile, same
+/// size, in the current tier's color (gold, or emerald once the gold
+/// Alphadex is complete). Returns true when confirmed.
 class UseBookmarkDialog extends StatelessWidget {
   final String letter;
   final AlphabetTier tier;
   final int bookmarksLeft;
+
+  /// Size of an Alphadex tile, so that the letter looks the same here
+  final Size tileSize;
 
   const UseBookmarkDialog({
     super.key,
     required this.letter,
     required this.tier,
     required this.bookmarksLeft,
+    required this.tileSize,
   });
 
   static Future<bool> show(
@@ -22,6 +28,7 @@ class UseBookmarkDialog extends StatelessWidget {
     required String letter,
     required AlphabetTier tier,
     required int bookmarksLeft,
+    required Size tileSize,
   }) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -29,6 +36,7 @@ class UseBookmarkDialog extends StatelessWidget {
         letter: letter,
         tier: tier,
         bookmarksLeft: bookmarksLeft,
+        tileSize: tileSize,
       ),
     );
     return confirmed ?? false;
@@ -38,8 +46,13 @@ class UseBookmarkDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      icon: BookmarkArt(tier: tier, size: 64),
-      title: Text('Lettre $letter'),
+      // Centered: the dialog would stretch it to its whole width
+      icon: Center(
+        child: SizedBox.fromSize(
+          size: tileSize,
+          child: LetterTile(letter: letter, unlocked: true, tier: tier),
+        ),
+      ),
       content: Text(
         'Voulez-vous débloquer cette lettre en utilisant un ${tier.bookmarkName} ?\n\n'
         'Il vous en reste $bookmarksLeft.',
