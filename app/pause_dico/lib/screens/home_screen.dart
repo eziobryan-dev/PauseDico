@@ -394,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (_isSunday) {
       if (_weeklyResult case final result?) {
-        return QuizDoneCard(title: QuizKind.weekly.title, result: result);
+        return QuizDoneCard(result: result);
       }
       final canPlay = _weeklyWords.length >= AppConstants.weeklyQuizMinWords;
       return FeatureCard(

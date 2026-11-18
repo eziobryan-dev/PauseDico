@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/quiz_result_model.dart';
-import 'quiz_rating_stars.dart';
 import 'quiz_result_dialog.dart';
 
-/// Card of a quiz already completed: no play button, its result instead,
-/// tinted with the rating color (unlike the tertiary "play" FeatureCard)
+/// Card of a quiz already completed: no play button, its "Quiz terminé"
+/// badge, score and rating instead, tinted with the rating color (unlike the
+/// tertiary "play" FeatureCard)
 class QuizDoneCard extends StatelessWidget {
-  final String title;
   final QuizResultModel result;
 
-  const QuizDoneCard({super.key, required this.title, required this.result});
+  const QuizDoneCard({super.key, required this.result});
 
   @override
   Widget build(BuildContext context) {
@@ -36,15 +35,6 @@ class QuizDoneCard extends StatelessWidget {
         children: [
           _DoneBadge(color: color),
           const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -60,8 +50,6 @@ class QuizDoneCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          QuizRatingStars(rating: rating, size: 28),
           const SizedBox(height: 8),
           Text(
             rating.title,
