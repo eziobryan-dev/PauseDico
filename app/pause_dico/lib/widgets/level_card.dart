@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/tier_colors.dart';
+import '../core/utils/app_clock.dart';
 import '../models/alphabet_tier_model.dart';
 import '../models/user_game_profile_model.dart';
 import '../services/level_service.dart';
@@ -19,7 +20,7 @@ class LevelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMaxLevel = profile.level >= LevelService.maxLevel;
-    final streak = profile.activeStreak(DateTime.now());
+    final streak = profile.activeStreak(AppClock.today());
     final tier = profile.tier;
 
     return Card(
@@ -146,7 +147,9 @@ class _Stat extends StatelessWidget {
         children: [
           art ?? Icon(icon, size: 18, color: color),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_clock.dart';
+
 abstract class DateHelpers {
   /// Returns the date without its time component.
   static DateTime dateOnly(DateTime date) =>
@@ -25,7 +27,7 @@ abstract class DateHelpers {
 
   /// Returns the date formatted as ISO string 'YYYY-MM-DD' for SQL queries.
   static String toIsoDateString([DateTime? date]) {
-    final targetDate = date ?? DateTime.now();
+    final targetDate = date ?? AppClock.now();
     final year = targetDate.year;
     final month = targetDate.month.toString().padLeft(2, '0');
     final day = targetDate.day.toString().padLeft(2, '0');
@@ -67,7 +69,7 @@ abstract class DateHelpers {
   /// Formats a DateTime into a human-readable French date string.
   /// Example: "Lundi 28 septembre 2026"
   static String formatFrenchDate([DateTime? date]) {
-    final targetDate = date ?? DateTime.now();
+    final targetDate = date ?? AppClock.now();
 
     const months = [
       'janvier', 'février', 'mars', 'avril', 'mai', 'juin',

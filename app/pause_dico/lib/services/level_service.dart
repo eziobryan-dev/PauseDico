@@ -22,6 +22,15 @@ abstract class LevelService {
   /// Total xp needed to reach [level]
   static int xpForLevel(int level) => 5 * level * level + 45 * level - 50;
 
+  /// Level reached with [xp] (the server's generated `level` column)
+  static int levelForXp(int xp) {
+    var level = 1;
+    while (level < maxLevel && xpForLevel(level + 1) <= xp) {
+      level++;
+    }
+    return level;
+  }
+
   /// Title of the highest step reached at [level]
   static String titleFor(int level) => _titles.entries
       .lastWhere((entry) => entry.key <= level)

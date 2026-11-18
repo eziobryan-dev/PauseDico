@@ -74,6 +74,8 @@ app/pause_dico/          App Flutter
                          OnboardingService, PronunciationService (TTS), WordShareService
     screens/             Écrans (auth_gate, auth, reset_password, onboarding, home, user, quiz,
                          alphabet, notebook) : orchestrent l'état
+    debug/               Scénarios de test (debug uniquement) : FakeBackend en mémoire,
+                         catalogue de scénarios, menu
     widgets/             Petits composants réutilisables (AppLogo, FeatureCard, WordCard…)
   assets/icons/          Logo et icônes utilisés dans l'app (déclarés dans pubspec.yaml)
   assets/launcher/       Sources des icônes de l'app (non embarquées)
@@ -88,10 +90,25 @@ Commandes utiles (depuis `app/pause_dico/`) :
 ```bash
 flutter pub get
 flutter analyze
+flutter test
 flutter run
+flutter run --dart-define=SCENARIO=menu   # scénarios de test (données simulées)
 flutter pub run flutter_launcher_icons   # régénère les icônes depuis assets/launcher/
 flutter build apk --release              # signé avec android/key.properties s'il existe
 ```
+
+## Tests et scénarios de debug
+
+Pour tester une feature sans se connecter, sans enchaîner les étapes et sans toucher à la base :
+
+- **Scénarios** (`lib/debug/`) : chaque `DebugScenario` de [debug_scenarios.dart](app/pause_dico/lib/debug/debug_scenarios.dart) décrit une situation prête à l'emploi (série de 29 jours, 25 lettres dorées, dimanche de quiz, quiz du mois en attente, erreurs réseau…). En debug seulement :
+  - `flutter run --dart-define=SCENARIO=menu` : liste de tous les scénarios (retour = menu, chaque ouverture repart de zéro) ;
+  - `flutter run --dart-define=SCENARIO=streak_30` : ouvre directement ce scénario.
+  Supabase n'est jamais initialisé dans ce mode. Ça tourne aussi sur le web (`-d chrome`) quand aucun émulateur n'est disponible.
+- **Comment ça marche** : les écrans récupèrent leurs repositories via `Repositories.xxx()` ([repositories.dart](app/pause_dico/lib/repositories/repositories.dart)), jamais `XxxRepository()` directement. Un scénario y branche un `FakeBackend` en mémoire ([fake_backend.dart](app/pause_dico/lib/debug/fake_backend.dart)), qui implémente tous les repositories et rejoue les règles du serveur (reveal, série, lettres, marque-pages, quiz). **Si une règle change dans les RPC SQL, mettre à jour `_Rules` et le `FakeBackend`.** `FakeSeed` génère l'historique et le profil à partir de quelques chiffres.
+- **Date** : toujours `AppClock.now()` / `AppClock.today()`, jamais `DateTime.now()` (un scénario déplace l'horloge, par exemple à un dimanche).
+- **Effets externes** : quand `AppEnvironment.simulated` est vrai, les pubs (`AdService`, `AdSlot`) et les notifications (`NotificationService`) sont simulées. Les rappels réels du téléphone ne sont pas touchés.
+- **Tests** (`flutter test`) : [scenarios_test.dart](app/pause_dico/test/scenarios_test.dart) ouvre chaque scénario puis joue les parcours clés via `pumpScenario` ([scenario_harness.dart](app/pause_dico/test/helpers/scenario_harness.dart)) ; [game_rules_test.dart](app/pause_dico/test/game_rules_test.dart) teste la logique pure (niveaux, série, dates). Pour couvrir une nouvelle feature : ajouter un scénario, puis un test qui l'ouvre.
 
 Release Android : identifiant `com.toutai.pausedico` (`applicationId`, imposé par la Play Console ; le `namespace` / package Kotlin reste `com.pausedico.app`). La signature lit `android/key.properties` (modèle : `key.properties.example`, fichier et keystore ignorés par git) ; sans lui, la release est signée avec la clé de debug.
 

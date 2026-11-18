@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/utils/app_clock.dart';
 import '../core/utils/date_helpers.dart';
 
 /// Displays a date in French with previous / next day arrows. Tapping the
@@ -24,7 +25,7 @@ class DateNavigator extends StatelessWidget {
   });
 
   Future<void> _openCalendar(BuildContext context) async {
-    final today = DateHelpers.dateOnly(DateTime.now());
+    final today = AppClock.today();
     final picked = await showDatePicker(
       context: context,
       initialDate: date,

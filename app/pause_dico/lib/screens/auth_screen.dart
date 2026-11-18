@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../repositories/auth_repository.dart';
+import '../repositories/repositories.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/error_banner.dart';
@@ -21,7 +22,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final AuthRepository _repository = AuthRepository();
+  final AuthRepository _repository = Repositories.auth();
 
   final _formKey = GlobalKey<FormState>();
 

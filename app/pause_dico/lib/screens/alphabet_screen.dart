@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/tier_colors.dart';
+import '../core/utils/app_clock.dart';
 import '../core/utils/context_extensions.dart';
-import '../core/utils/date_helpers.dart';
 import '../models/user_game_profile_model.dart';
 import '../models/word_model.dart';
+import '../repositories/repositories.dart';
 import '../repositories/user_game_profile_repository.dart';
 import '../repositories/user_word_history_repository.dart';
 import '../widgets/emerald_alphadex_view.dart';
@@ -35,8 +36,8 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
     null,
   ];
 
-  final UserGameProfileRepository _profileRepository = UserGameProfileRepository();
-  final UserWordHistoryRepository _historyRepository = UserWordHistoryRepository();
+  final UserGameProfileRepository _profileRepository = Repositories.gameProfile();
+  final UserWordHistoryRepository _historyRepository = Repositories.history();
 
   UserGameProfileModel? _profile;
   bool _isLoading = true;
@@ -104,10 +105,7 @@ class _AlphabetScreenState extends State<AlphabetScreen> {
 
     setState(() => _isUsingBookmark = true);
     try {
-      final rewards = await _profileRepository.useBookmark(
-        DateHelpers.dateOnly(DateTime.now()),
-        letter,
-      );
+      final rewards = await _profileRepository.useBookmark(AppClock.today(), letter);
       final updated = await _profileRepository.getProfile();
       if (!mounted) return;
       setState(() => _profile = updated ?? profile);

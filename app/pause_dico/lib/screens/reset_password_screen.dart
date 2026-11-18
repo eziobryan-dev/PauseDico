@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../repositories/auth_repository.dart';
+import '../repositories/repositories.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/screen_title.dart';
@@ -18,7 +19,7 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  final AuthRepository _repository = AuthRepository();
+  final AuthRepository _repository = Repositories.auth();
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();

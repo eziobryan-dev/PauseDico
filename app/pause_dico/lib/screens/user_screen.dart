@@ -5,6 +5,7 @@ import '../core/utils/time_picker_helpers.dart';
 import '../models/user_game_profile_model.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/repositories.dart';
 import '../repositories/user_game_profile_repository.dart';
 import '../repositories/user_repository.dart';
 import '../services/ad_service.dart';
@@ -26,10 +27,10 @@ class UserScreen extends StatefulWidget {
 }
 
 class _UserScreenState extends State<UserScreen> {
-  final UserRepository _userRepository = UserRepository();
-  final AuthRepository _authRepository = AuthRepository();
+  final UserRepository _userRepository = Repositories.user();
+  final AuthRepository _authRepository = Repositories.auth();
   final UserGameProfileRepository _gameProfileRepository =
-      UserGameProfileRepository();
+      Repositories.gameProfile();
   final TextEditingController _usernameController = TextEditingController();
 
   UserModel? _user;

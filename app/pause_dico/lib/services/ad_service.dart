@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/utils/app_environment.dart';
 
 /// Google AdMob: consent (UMP, required in Europe), banner and rewarded ads.
 /// Never throws: without consent or network, the app simply shows no ads.
@@ -13,6 +14,9 @@ class AdService {
   static final ValueNotifier<bool> isReady = ValueNotifier(false);
 
   static bool _initStarted = false;
+
+  /// Length of the fake rewarded ad in simulated mode
+  static const Duration simulatedRewardedAdDuration = Duration(milliseconds: 800);
 
   static String get bannerUnitId => Platform.isIOS
       ? AppConstants.admobBannerIos
@@ -25,6 +29,10 @@ class AdService {
   /// Shows the consent form if needed (first launch in Europe), then starts
   /// the SDK. Called once the user is on the home screen.
   static Future<void> init() async {
+    if (AppEnvironment.simulated) {
+      isReady.value = true;
+      return;
+    }
     if (_initStarted) return;
     _initStarted = true;
     try {
@@ -58,6 +66,7 @@ class AdService {
 
   /// The user must be able to change their consent (from the profile)
   static Future<bool> isPrivacyOptionsRequired() async {
+    if (AppEnvironment.simulated) return false;
     try {
       return await ConsentInformation.instance
               .getPrivacyOptionsRequirementStatus() ==
@@ -78,6 +87,11 @@ class AdService {
   /// the reward was granted.
   static Future<bool> showRewardedAd() async {
     if (!isReady.value) return false;
+    if (AppEnvironment.simulated) {
+      // Watched until the reward, after a short "ad"
+      await Future<void>.delayed(simulatedRewardedAdDuration);
+      return true;
+    }
     final ad = await _loadRewardedAd();
     if (ad == null) return false;
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,12 +6,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_switcher.dart';
+import 'debug/debug_menu_screen.dart';
 import 'screens/auth_gate.dart';
 import 'services/notification_service.dart';
 import 'services/theme_service.dart';
 
+/// Debug scenario to open instead of the real app (debug builds only):
+/// `flutter run --dart-define=SCENARIO=menu` (list) or `SCENARIO=<id>`
+const String _scenario = String.fromEnvironment('SCENARIO');
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kDebugMode && _scenario.isNotEmpty) {
+    // Simulated data only: Supabase is never initialized
+    runApp(PauseDicoApp(
+      home: DebugMenuScreen(autoStartId: _scenario == 'menu' ? null : _scenario),
+    ));
+    return;
+  }
 
   await Supabase.initialize(
     url: AppConstants.supabaseUrl,
@@ -23,7 +37,9 @@ void main() async {
 }
 
 class PauseDicoApp extends StatelessWidget {
-  const PauseDicoApp({super.key});
+  final Widget home;
+
+  const PauseDicoApp({super.key, this.home = const AuthGate()});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +55,7 @@ class PauseDicoApp extends StatelessWidget {
           locale: const Locale('fr', 'FR'),
           supportedLocales: const [Locale('fr', 'FR')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          home: const AuthGate(),
+          home: home,
         );
       },
     );

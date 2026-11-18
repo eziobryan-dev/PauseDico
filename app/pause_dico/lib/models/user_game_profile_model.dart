@@ -92,6 +92,51 @@ class UserGameProfileModel {
 
   bool get hasAllLetters => activeMask == _allLettersMask;
 
+  UserGameProfileModel copyWith({
+    int? level,
+    int? xp,
+    int? nbWords,
+    int? nbQuizWeeklyCompleted,
+    int? nbQuizMonthlyCompleted,
+    int? nbQuizYearlyCompleted,
+    int? nbSkip,
+    int? currentStreak,
+    int? bestStreak,
+    DateTime? lastRevealDate,
+    int? lettersMask,
+    int? goldBookmarkMask,
+    DateTime? emeraldSince,
+    int? emeraldMask,
+    int? emeraldBookmarkMask,
+    int? bookmarkFragments,
+    int? bookmarks,
+  }) {
+    return UserGameProfileModel(
+      userId: userId,
+      level: level ?? this.level,
+      xp: xp ?? this.xp,
+      nbWords: nbWords ?? this.nbWords,
+      nbQuizWeeklyCompleted: nbQuizWeeklyCompleted ?? this.nbQuizWeeklyCompleted,
+      nbQuizMonthlyCompleted:
+          nbQuizMonthlyCompleted ?? this.nbQuizMonthlyCompleted,
+      nbQuizYearlyCompleted: nbQuizYearlyCompleted ?? this.nbQuizYearlyCompleted,
+      nbSkip: nbSkip ?? this.nbSkip,
+      currentStreak: currentStreak ?? this.currentStreak,
+      bestStreak: bestStreak ?? this.bestStreak,
+      lastRevealDate: lastRevealDate ?? this.lastRevealDate,
+      lettersMask: lettersMask ?? this.lettersMask,
+      goldBookmarkMask: goldBookmarkMask ?? this.goldBookmarkMask,
+      emeraldSince: emeraldSince ?? this.emeraldSince,
+      emeraldMask: emeraldMask ?? this.emeraldMask,
+      emeraldBookmarkMask: emeraldBookmarkMask ?? this.emeraldBookmarkMask,
+      bookmarkFragments: bookmarkFragments ?? this.bookmarkFragments,
+      bookmarks: bookmarks ?? this.bookmarks,
+    );
+  }
+
+  /// Bit of [letter] (A = bit 0) in the letter masks
+  static int letterBit(String letter) => _bit(letter);
+
   factory UserGameProfileModel.fromJson(Map<String, dynamic> json) {
     final lastRevealDate = json['last_reveal_date'] as String?;
     final emeraldSince = json['emerald_since'] as String?;

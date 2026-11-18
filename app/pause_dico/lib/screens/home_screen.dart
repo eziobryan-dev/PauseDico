@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/utils/app_clock.dart';
 import '../core/utils/context_extensions.dart';
 import '../core/utils/date_helpers.dart';
 import '../models/quiz_result_model.dart';
@@ -9,6 +10,7 @@ import '../models/special_quiz_model.dart';
 import '../models/user_word_history_model.dart';
 import '../models/word_model.dart';
 import '../repositories/quiz_repository.dart';
+import '../repositories/repositories.dart';
 import '../repositories/user_game_profile_repository.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/user_word_history_repository.dart';
@@ -39,17 +41,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  final UserRepository _userRepository = UserRepository();
-  final UserWordHistoryRepository _historyRepository =
-      UserWordHistoryRepository();
-  final QuizRepository _quizRepository = QuizRepository();
+  final UserRepository _userRepository = Repositories.user();
+  final UserWordHistoryRepository _historyRepository = Repositories.history();
+  final QuizRepository _quizRepository = Repositories.quiz();
   final UserGameProfileRepository _gameProfileRepository =
-      UserGameProfileRepository();
+      Repositories.gameProfile();
 
-  DateTime _selectedDate = DateHelpers.dateOnly(DateTime.now());
+  DateTime _selectedDate = AppClock.today();
   DateTime? _userCreatedAt;
   TimeOfDay? _notifTime;
-  DateTime _lastLoadedAt = DateTime.now();
+  DateTime _lastLoadedAt = AppClock.now();
   UserWordHistoryModel? _dailyEntry;
   List<WordModel> _weeklyWords = [];
   /// Result of the selected Sunday's weekly quiz, null until completed
@@ -61,15 +62,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   bool get _isSunday => _selectedDate.weekday == DateTime.sunday;
 
-  bool get _isToday =>
-      _selectedDate == DateHelpers.dateOnly(DateTime.now());
+  bool get _isToday => _selectedDate == AppClock.today();
 
   bool get _canGoPrevious =>
       _userCreatedAt == null ||
       _selectedDate.isAfter(DateHelpers.dateOnly(_userCreatedAt!));
 
-  bool get _canGoNext =>
-      _selectedDate.isBefore(DateHelpers.dateOnly(DateTime.now()));
+  bool get _canGoNext => _selectedDate.isBefore(AppClock.today());
 
   @override
   void initState() {
@@ -93,18 +92,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state != AppLifecycleState.resumed) return;
     if (!DateHelpers.hasCrossedDailyBoundary(
       _lastLoadedAt,
-      DateTime.now(),
+      AppClock.now(),
       _notifTime,
     )) {
       return;
     }
 
-    setState(() => _selectedDate = DateHelpers.dateOnly(DateTime.now()));
+    setState(() => _selectedDate = AppClock.today());
     _fetchUserAndLoadWord(forceRefresh: true);
   }
 
   Future<void> _fetchUserAndLoadWord({bool forceRefresh = false}) async {
-    _lastLoadedAt = DateTime.now();
+    _lastLoadedAt = AppClock.now();
     final userProfile = await _userRepository.getUser();
     if (mounted && userProfile != null) {
       setState(() {
@@ -123,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _syncReminders() async {
     try {
       if (!await NotificationService.isEnabled()) return;
-      final today = DateHelpers.dateOnly(DateTime.now());
+      final today = AppClock.today();
       final todayEntry = await _historyRepository.getWordByDate(today);
       final profile = await _gameProfileRepository.getProfile();
       await NotificationService.scheduleReminders(
@@ -139,9 +138,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Monthly / yearly quizzes waiting to be played (they stay until completed)
   Future<void> _loadPendingQuizzes() async {
     try {
-      final quizzes = await _quizRepository.getPendingQuizzes(
-        DateHelpers.dateOnly(DateTime.now()),
-      );
+      final quizzes = await _quizRepository.getPendingQuizzes(AppClock.today());
       if (mounted) setState(() => _pendingQuizzes = quizzes);
     } catch (e) {
       // Not blocking: the icon will show up on the next load

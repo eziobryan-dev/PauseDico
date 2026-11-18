@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/utils/text_helpers.dart';
 import '../models/user_word_history_model.dart';
+import '../repositories/repositories.dart';
 import '../repositories/user_word_history_repository.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/notebook_entry_tile.dart';
@@ -18,7 +19,7 @@ class NotebookScreen extends StatefulWidget {
 }
 
 class _NotebookScreenState extends State<NotebookScreen> {
-  final UserWordHistoryRepository _historyRepository = UserWordHistoryRepository();
+  final UserWordHistoryRepository _historyRepository = Repositories.history();
 
   List<UserWordHistoryModel> _entries = [];
   bool _isLoading = true;

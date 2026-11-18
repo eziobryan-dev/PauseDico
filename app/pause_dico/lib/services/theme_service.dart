@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/app_constants.dart';
 import '../core/theme/theme_switcher.dart';
+import '../repositories/repositories.dart';
 import '../repositories/user_repository.dart';
 
 /// Dark theme preference: applied instantly, cached in shared_preferences
@@ -12,7 +13,8 @@ import '../repositories/user_repository.dart';
 /// Database writes are debounced and serialized: rapid toggles result in at
 /// most one write of the final value.
 class ThemeService {
-  static final UserRepository _userRepository = UserRepository();
+  /// Built on first save, so that a debug scenario's fake is used
+  static UserRepository? _userRepository;
 
   static Timer? _saveTimer;
   static Future<void> _saving = Future.value();
@@ -54,7 +56,7 @@ class ThemeService {
     // Toggled back to the saved value, or a newer value is on its way
     if (dark == _lastSavedDarkTheme || _isDark != dark) return;
     try {
-      await _userRepository.patchDarkTheme(dark);
+      await (_userRepository ??= Repositories.user()).patchDarkTheme(dark);
       _lastSavedDarkTheme = dark;
     } catch (e) {
       // Kept locally (cache): saved again on the next toggle
@@ -64,6 +66,7 @@ class ThemeService {
   /// On sign-out: the next account's preference must be applied
   static void reset() {
     _saveTimer?.cancel();
+    _userRepository = null;
     _toggledThisSession = false;
     _lastSavedDarkTheme = null;
   }

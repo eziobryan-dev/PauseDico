@@ -40,11 +40,13 @@ class QuizDefinitionCard extends StatelessWidget {
             children: [
               const Icon(Icons.help_outline_rounded, color: Colors.white70),
               const SizedBox(width: 8),
-              Text(
-                'Quel mot correspond ?',
-                style: appTheme.textTheme.titleSmall?.copyWith(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  'Quel mot correspond ?',
+                  style: appTheme.textTheme.titleSmall?.copyWith(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

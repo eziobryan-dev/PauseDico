@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../core/utils/app_environment.dart';
 import '../services/ad_service.dart';
+import 'simulated_ad_banner.dart';
 
 /// Adaptive banner anchored at the bottom of the screen (full width, height
 /// chosen by Google, at most 15% of the screen). Takes no space until an ad
@@ -37,6 +39,7 @@ class _AdSlotState extends State<AdSlot> {
   }
 
   void _onAdsReady() {
+    if (AppEnvironment.simulated) return;
     if (AdService.isReady.value && _ad == null && mounted) _load();
   }
 
@@ -60,6 +63,7 @@ class _AdSlotState extends State<AdSlot> {
 
   @override
   Widget build(BuildContext context) {
+    if (AppEnvironment.simulated) return const SimulatedAdBanner();
     final ad = _ad;
     if (!_isLoaded || ad == null) return const SizedBox.shrink();
 

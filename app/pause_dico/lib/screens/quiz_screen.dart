@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/utils/app_clock.dart';
 import '../core/utils/context_extensions.dart';
-import '../core/utils/date_helpers.dart';
 import '../models/quiz_answer_model.dart';
 import '../models/quiz_option_model.dart';
 import '../models/quiz_question_model.dart';
@@ -13,6 +13,7 @@ import '../models/quiz_result_model.dart';
 import '../models/quiz_session_model.dart';
 import '../models/special_quiz_model.dart';
 import '../repositories/quiz_repository.dart';
+import '../repositories/repositories.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/quiz_answer_tag.dart';
 import '../widgets/quiz_definition_card.dart';
@@ -36,7 +37,7 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  final QuizRepository _quizRepository = QuizRepository();
+  final QuizRepository _quizRepository = Repositories.quiz();
 
   QuizSessionModel? _session;
   bool _isLoading = true;
@@ -75,7 +76,7 @@ class _QuizScreenState extends State<QuizScreen> {
       final session = await _quizRepository.startQuiz(
         widget.kind,
         widget.refDate,
-        DateHelpers.dateOnly(DateTime.now()),
+        AppClock.today(),
       );
       if (!mounted) return;
       setState(() {

@@ -7,12 +7,17 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../core/constants/app_constants.dart';
+import '../core/utils/app_environment.dart';
 
 /// Daily "mot du jour" reminder: permission, scheduling, and the local
 /// on/off flag cached in shared_preferences.
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+
+  /// Simulated mode: the reminder flag lives in memory, nothing is scheduled
+  /// on the device (its real reminders stay untouched)
+  static bool _simulatedEnabled = false;
 
   static bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 
@@ -45,6 +50,7 @@ class NotificationService {
 
   /// Asks the OS for the notification permission. Returns whether it is granted.
   static Future<bool> requestPermission() async {
+    if (AppEnvironment.simulated) return true;
     final granted = _isAndroid
         ? await _android?.requestNotificationsPermission()
         : await _ios?.requestPermissions(alert: true, badge: true, sound: true);
@@ -53,6 +59,7 @@ class NotificationService {
 
   /// Whether notifications are currently allowed by the OS
   static Future<bool> hasPermission() async {
+    if (AppEnvironment.simulated) return true;
     final granted = _isAndroid
         ? await _android?.areNotificationsEnabled()
         : (await _ios?.checkPermissions())?.isEnabled;
@@ -61,6 +68,7 @@ class NotificationService {
 
   /// Whether the user turned the daily reminder on (local cache)
   static Future<bool> isEnabled() async {
+    if (AppEnvironment.simulated) return _simulatedEnabled;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(AppConstants.dailyNotificationEnabledKey) ?? false;
   }
@@ -93,6 +101,7 @@ class NotificationService {
     bool revealedToday = false,
     int streak = 0,
   }) async {
+    if (AppEnvironment.simulated) return;
     await _cancelReminders();
 
     final now = tz.TZDateTime.now(tz.local);
@@ -140,12 +149,17 @@ class NotificationService {
   );
 
   static Future<void> _cancelReminders() async {
+    if (AppEnvironment.simulated) return;
     for (var offset = 0; offset < AppConstants.scheduledRemindersCount; offset++) {
       await _plugin.cancel(id: AppConstants.dailyNotificationId + offset);
     }
   }
 
   static Future<void> _setEnabled(bool enabled) async {
+    if (AppEnvironment.simulated) {
+      _simulatedEnabled = enabled;
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.dailyNotificationEnabledKey, enabled);
   }
