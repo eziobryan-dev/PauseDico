@@ -1,0 +1,36 @@
+<!-- Supabase > Authentication > Email Templates > Confirm signup
+     Sujet : Bienvenue sur PauseDico ! Confirmez votre adresse e-mail -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,Helvetica,sans-serif;color:#0F172A;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border-radius:16px;overflow:hidden;">
+        <tr><td style="background:#4F46E5;padding:28px 32px;text-align:center;">
+          <div style="font-size:26px;font-weight:bold;color:#FFFFFF;letter-spacing:.5px;">PauseDico</div>
+          <div style="width:48px;height:4px;background:#FBBF24;margin:10px auto 0;border-radius:2px;"></div>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <h1 style="margin:0 0 16px;font-size:22px;">Bienvenue{{ if .Data.username }} {{ .Data.username }}{{ end }} !</h1>
+          <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">
+            Merci de rejoindre PauseDico. Chaque jour, un nouveau mot du dictionnaire vous attend, et chaque dimanche un quiz pour le retenir.
+          </p>
+          <p style="margin:0 0 28px;font-size:16px;line-height:1.6;">
+            Pour activer votre compte, confirmez votre adresse e-mail :
+          </p>
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center"><tr><td style="border-radius:10px;background:#4F46E5;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Confirmer mon adresse</a>
+          </td></tr></table>
+          <p style="margin:28px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
+            Ouvrez ce lien depuis le téléphone où PauseDico est installée. Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet e-mail.
+          </p>
+        </td></tr>
+        <tr><td style="padding:16px 32px 28px;font-size:12px;color:#94A3B8;text-align:center;">
+          PauseDico · Un mot par jour, pour la vie
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
