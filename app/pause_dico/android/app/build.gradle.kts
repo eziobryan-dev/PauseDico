@@ -57,6 +57,8 @@ android {
             // debug key so `flutter run --release` keeps working
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
+            // Extra R8 keep rules (see the file for why)
+            proguardFiles("proguard-rules.pro")
         }
     }
 }
