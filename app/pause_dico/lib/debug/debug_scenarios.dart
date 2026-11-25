@@ -27,7 +27,7 @@ abstract class DebugScenarios {
       id: 'new_user',
       category: _daily,
       title: 'Nouveau compte',
-      description: 'Aucun mot, niveau 1, 1 skip. Révèle le tout premier mot.',
+      description: 'Aucun mot, niveau 1. Révèle le tout premier mot.',
       now: _wednesday,
       build: () => FakeSeed.backend(today: _wednesday, xp: 0),
     ),
@@ -35,8 +35,9 @@ abstract class DebugScenarios {
       id: 'daily',
       category: _daily,
       title: 'Mot du jour à révéler',
-      description: 'Série de 12 jours. Choisis un thème, like, skip, puis '
-          'navigue dans les jours passés (dont un jour sans mot).',
+      description: 'Série de 12 jours. Choisis un des 3 mots, « Suivant », like, '
+          'puis navigue dans les jours passés (dont un jour sans mot). '
+          'La pastille « Prochain quiz » ouvre la règle des quiz.',
       now: _wednesday,
       build: () => FakeSeed.backend(today: _wednesday, streakDays: 12, olderWords: 5),
     ),
@@ -49,20 +50,11 @@ abstract class DebugScenarios {
       build: () => FakeSeed.backend(today: _wednesday, streakDays: 8, revealedToday: true),
     ),
     DebugScenario(
-      id: 'no_skip',
-      category: _daily,
-      title: 'Plus de skip',
-      description: '0 skip : « Regarder une pub : +1 skip » (pub simulée), '
-          'une seule fois par jour.',
-      now: _wednesday,
-      build: () => FakeSeed.backend(today: _wednesday, streakDays: 6, nbSkip: 0),
-    ),
-    DebugScenario(
       id: 'errors',
       category: _daily,
       title: 'Erreurs réseau',
-      description: 'Le 1er chargement, le chargement des thèmes, le reveal et '
-          'le skip échouent une fois : vérifie les messages et « Réessayer ».',
+      description: 'Le 1er chargement, le chargement des mots du jour et la '
+          'validation du choix échouent une fois : vérifie les messages et « Réessayer ».',
       now: _wednesday,
       build: () => FakeSeed.backend(
         today: _wednesday,
@@ -71,7 +63,6 @@ abstract class DebugScenarios {
           FakeFailure.loadWord: 1,
           FakeFailure.dailyChoices: 1,
           FakeFailure.reveal: 1,
-          FakeFailure.skip: 1,
         },
       ),
     ),
@@ -81,17 +72,17 @@ abstract class DebugScenarios {
       id: 'streak_30',
       category: _rewards,
       title: 'Série de 30 jours',
-      description: 'Série de 29 jours : le prochain reveal donne +100 XP et +1 skip.',
+      description: 'Série de 29 jours : le prochain reveal donne +100 XP.',
       now: _wednesday,
-      build: () => FakeSeed.backend(today: _wednesday, streakDays: 29, nbSkip: 0),
+      build: () => FakeSeed.backend(today: _wednesday, streakDays: 29),
     ),
     DebugScenario(
       id: 'level_5',
       category: _rewards,
       title: 'Passage au niveau 5',
-      description: '295 XP : le reveal fait passer niveau 5 (« Apprenti ») et donne +1 skip.',
+      description: '295 XP : le reveal fait passer niveau 5 (« Apprenti »).',
       now: _wednesday,
-      build: () => FakeSeed.backend(today: _wednesday, streakDays: 4, xp: 295, nbSkip: 0),
+      build: () => FakeSeed.backend(today: _wednesday, streakDays: 4, xp: 295),
     ),
     DebugScenario(
       id: 'words_50',
@@ -267,7 +258,8 @@ abstract class DebugScenarios {
       id: 'profile',
       category: _profile,
       title: 'Profil',
-      description: 'Niveau 13, série de 9 jours : pseudo, thème sombre, rappel, déconnexion.',
+      description: 'Niveau 13, série de 9 jours : légende des ressources (ⓘ), pseudo, '
+          'thème sombre, rappel, déconnexion.',
       now: _wednesday,
       start: ScenarioStart.profile,
       build: () => FakeSeed.backend(today: _wednesday, streakDays: 9, xp: 1500),

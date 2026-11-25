@@ -1,13 +1,12 @@
 import 'alphabet_tier_model.dart';
 import 'reward_event_model.dart';
 
-/// Rewards granted by an action (reveal, skip, quiz, bookmark…) and the
+/// Rewards granted by an action (reveal, quiz, bookmark…) and the
 /// resulting profile
 class RewardSummaryModel {
   final List<RewardEventModel> events;
   final int xp;
   final int level;
-  final int nbSkip;
   final int nbWords;
   final int currentStreak;
   final int bookmarkFragments;
@@ -18,7 +17,6 @@ class RewardSummaryModel {
     required this.events,
     required this.xp,
     required this.level,
-    required this.nbSkip,
     required this.nbWords,
     required this.currentStreak,
     required this.bookmarkFragments,
@@ -29,8 +27,6 @@ class RewardSummaryModel {
   bool get isEmpty => events.isEmpty;
 
   int get totalXp => events.fold(0, (sum, event) => sum + event.xp);
-
-  int get totalSkips => events.fold(0, (sum, event) => sum + event.skips);
 
   int get totalFragments => events.fold(0, (sum, event) => sum + event.fragments);
 
@@ -49,15 +45,14 @@ class RewardSummaryModel {
 
   bool get emeraldCompleted => events.any((event) => event.emeraldCompleted);
 
-  /// Rewards of this action followed by [next]'s (e.g. a reveal then a skip
-  /// that unlocks a letter), with the profile figures after [next]
+  /// Rewards of this action followed by [next]'s, with the profile figures
+  /// after [next]
   RewardSummaryModel merge(RewardSummaryModel? next) {
     if (next == null) return this;
     return RewardSummaryModel(
       events: [...events, ...next.events],
       xp: next.xp,
       level: next.level,
-      nbSkip: next.nbSkip,
       nbWords: next.nbWords,
       currentStreak: next.currentStreak,
       bookmarkFragments: next.bookmarkFragments,
@@ -74,7 +69,6 @@ class RewardSummaryModel {
           .toList(),
       xp: profile['xp'] as int? ?? 0,
       level: profile['level'] as int? ?? 1,
-      nbSkip: profile['nb_skip'] as int? ?? 0,
       nbWords: profile['nb_words'] as int? ?? 0,
       currentStreak: profile['current_streak'] as int? ?? 0,
       bookmarkFragments: profile['bookmark_fragments'] as int? ?? 0,
@@ -89,7 +83,6 @@ class RewardSummaryModel {
       'profile': {
         'xp': xp,
         'level': level,
-        'nb_skip': nbSkip,
         'nb_words': nbWords,
         'current_streak': currentStreak,
         'bookmark_fragments': bookmarkFragments,

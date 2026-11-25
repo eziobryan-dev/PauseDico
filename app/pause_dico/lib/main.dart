@@ -8,6 +8,8 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_switcher.dart';
 import 'debug/debug_menu_screen.dart';
 import 'screens/auth_gate.dart';
+import 'screens/force_update_screen.dart';
+import 'services/app_update_service.dart';
 import 'services/notification_service.dart';
 import 'services/theme_service.dart';
 
@@ -33,7 +35,11 @@ void main() async {
   await NotificationService.init();
   await ThemeService.loadCached();
 
-  runApp(const PauseDicoApp());
+  // Too old for the server: blocking "update required" screen
+  final updateRequired = await AppUpdateService.isUpdateRequired();
+  runApp(PauseDicoApp(
+    home: updateRequired ? const ForceUpdateScreen() : const AuthGate(),
+  ));
 }
 
 class PauseDicoApp extends StatelessWidget {

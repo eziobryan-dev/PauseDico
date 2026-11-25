@@ -1,15 +1,12 @@
 import 'alphabet_tier_model.dart';
 
-/// One reward granted by the server (e.g. "Série de 30 jours !" +100 xp +1 skip)
+/// One reward granted by the server (e.g. "Série de 30 jours !" +100 xp)
 class RewardEventModel {
   /// What granted it: reveal, streak, letter, emerald_letter, all_letters,
-  /// words_milestone, fragment, ad…
+  /// words_milestone, fragment…
   final String source;
   final String label;
   final int xp;
-
-  /// Skips granted, including +1 every 5 levels
-  final int skips;
 
   /// Bookmark fragments found, and bookmarks assembled from them (7 fragments)
   final int fragments;
@@ -36,7 +33,6 @@ class RewardEventModel {
     required this.source,
     required this.label,
     required this.xp,
-    required this.skips,
     required this.fragments,
     required this.bookmarks,
     required this.tier,
@@ -55,7 +51,6 @@ class RewardEventModel {
       source: json['source'] as String? ?? '',
       label: json['label'] as String? ?? '',
       xp: json['xp'] as int? ?? 0,
-      skips: json['skips'] as int? ?? 0,
       fragments: json['fragments'] as int? ?? 0,
       bookmarks: json['bookmarks'] as int? ?? 0,
       tier: AlphabetTier.fromDb(json['tier'] as String?),
@@ -73,7 +68,6 @@ class RewardEventModel {
       'source': source,
       'label': label,
       'xp': xp,
-      'skips': skips,
       'fragments': fragments,
       'bookmarks': bookmarks,
       'tier': tier.dbValue,

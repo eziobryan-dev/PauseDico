@@ -5,7 +5,6 @@ import '../core/utils/app_clock.dart';
 import '../core/utils/context_extensions.dart';
 import '../core/utils/date_helpers.dart';
 import '../models/quiz_result_model.dart';
-import '../models/reward_summary_model.dart';
 import '../models/special_quiz_model.dart';
 import '../models/user_word_history_model.dart';
 import '../models/word_model.dart';
@@ -23,10 +22,12 @@ import '../widgets/date_navigator.dart';
 import '../widgets/empty_word_card.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/glowing_quiz_button.dart';
+import '../widgets/next_quiz_chip.dart';
+import '../widgets/quiz_info_sheet.dart';
 import '../widgets/quiz_done_card.dart';
 import '../widgets/screen_title.dart';
 import '../widgets/word_card.dart';
-import '../widgets/theme_choice_overlay.dart';
+import '../widgets/word_choice_overlay.dart';
 import '../widgets/word_reveal_overlay.dart';
 import 'alphabet_screen.dart';
 import 'notebook_screen.dart';
@@ -69,6 +70,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _selectedDate.isAfter(DateHelpers.dateOnly(_userCreatedAt!));
 
   bool get _canGoNext => _selectedDate.isBefore(AppClock.today());
+
+  int get _daysUntilWeeklyQuiz => DateHelpers.daysUntilSunday(AppClock.today());
 
   @override
   void initState() {
@@ -187,9 +190,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() => _isRevealing = true);
 
     try {
-      // 1. The user picks one of the 3 candidate themes (the overlay opens
-      //    right away and shows a spinner while they load)
-      final reveal = await ThemeChoiceOverlay.show(
+      // 1. The user picks one of the 3 candidate words (the same 3 until one
+      //    is chosen); "Suivant" saves the choice
+      final reveal = await WordChoiceOverlay.show(
         context,
         loadChoices: () => _historyRepository.getDailyChoices(date),
         onPick: (wordId) => _historyRepository.revealDailyWord(date, wordId),
@@ -198,16 +201,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Revealed: no reminder today, and the new streak in the next one
       _syncReminders();
 
-      // 2. Its word is revealed with the entrance animation
+      // 2. Its definition, then the rewards
       final kept = await WordRevealOverlay.show(
         context,
         reveal: reveal,
-        onSkip: () => _historyRepository.skipDailyWord(date),
         onLikeChanged: _historyRepository.setWordLiked,
-        canWatchAdForSkip: () async =>
-            AdService.isReady.value &&
-            await _gameProfileRepository.canClaimAdSkip(date),
-        onWatchAdForSkip: () => _watchAdForSkip(date),
       );
       if (!mounted) return;
 
@@ -228,12 +226,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } finally {
       if (mounted) setState(() => _isRevealing = false);
     }
-  }
-
-  /// Rewarded ad, then the server grants the skip (null if not watched)
-  Future<RewardSummaryModel?> _watchAdForSkip(DateTime date) async {
-    if (!await AdService.showRewardedAd()) return null;
-    return _gameProfileRepository.claimAdSkip(date);
   }
 
   Future<bool> _setDailyWordLiked(bool liked) async {
@@ -364,6 +356,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               canGoNext: _canGoNext,
               onChangeDay: _changeDate,
               onPickDate: _goToDate,
+              trailing: NextQuizChip(
+                daysLeft: _daysUntilWeeklyQuiz,
+                onTap: () => QuizInfoSheet.show(
+                  context,
+                  daysUntilWeekly: _daysUntilWeeklyQuiz,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             _buildContent(),

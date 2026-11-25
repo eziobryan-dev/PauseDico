@@ -8,12 +8,11 @@ class UserGameProfileModel {
   final int level;
   final int xp;
 
-  /// Words revealed since the account was created (skipped ones excluded)
+  /// Words revealed since the account was created
   final int nbWords;
   final int nbQuizWeeklyCompleted;
   final int nbQuizMonthlyCompleted;
   final int nbQuizYearlyCompleted;
-  final int nbSkip;
   final int currentStreak;
   final int bestStreak;
   final DateTime? lastRevealDate;
@@ -41,7 +40,6 @@ class UserGameProfileModel {
     required this.nbQuizWeeklyCompleted,
     required this.nbQuizMonthlyCompleted,
     required this.nbQuizYearlyCompleted,
-    required this.nbSkip,
     required this.currentStreak,
     required this.bestStreak,
     required this.lastRevealDate,
@@ -99,7 +97,6 @@ class UserGameProfileModel {
     int? nbQuizWeeklyCompleted,
     int? nbQuizMonthlyCompleted,
     int? nbQuizYearlyCompleted,
-    int? nbSkip,
     int? currentStreak,
     int? bestStreak,
     DateTime? lastRevealDate,
@@ -120,7 +117,6 @@ class UserGameProfileModel {
       nbQuizMonthlyCompleted:
           nbQuizMonthlyCompleted ?? this.nbQuizMonthlyCompleted,
       nbQuizYearlyCompleted: nbQuizYearlyCompleted ?? this.nbQuizYearlyCompleted,
-      nbSkip: nbSkip ?? this.nbSkip,
       currentStreak: currentStreak ?? this.currentStreak,
       bestStreak: bestStreak ?? this.bestStreak,
       lastRevealDate: lastRevealDate ?? this.lastRevealDate,
@@ -148,7 +144,6 @@ class UserGameProfileModel {
       nbQuizWeeklyCompleted: json['nb_quiz_weekly_completed'] as int? ?? 0,
       nbQuizMonthlyCompleted: json['nb_quiz_monthly_completed'] as int? ?? 0,
       nbQuizYearlyCompleted: json['nb_quiz_yearly_completed'] as int? ?? 0,
-      nbSkip: json['nb_skip'] as int? ?? 0,
       currentStreak: json['current_streak'] as int? ?? 0,
       bestStreak: json['best_streak'] as int? ?? 0,
       lastRevealDate:
@@ -172,7 +167,6 @@ class UserGameProfileModel {
       'nb_quiz_weekly_completed': nbQuizWeeklyCompleted,
       'nb_quiz_monthly_completed': nbQuizMonthlyCompleted,
       'nb_quiz_yearly_completed': nbQuizYearlyCompleted,
-      'nb_skip': nbSkip,
       'current_streak': currentStreak,
       'best_streak': bestStreak,
       'last_reveal_date': lastRevealDate == null

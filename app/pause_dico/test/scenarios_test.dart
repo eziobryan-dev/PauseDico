@@ -6,15 +6,21 @@ import 'package:pause_dico/models/alphabet_tier_model.dart';
 import 'package:pause_dico/widgets/bookmark_art.dart';
 import 'package:pause_dico/widgets/letter_tile.dart';
 import 'package:pause_dico/widgets/quiz_rating_stars.dart';
-import 'package:pause_dico/widgets/theme_choice_tag.dart';
+import 'package:pause_dico/widgets/word_choice_tile.dart';
 
 import 'helpers/scenario_harness.dart';
 
-/// Opens the daily word: picks the first theme, then shows the word card
-Future<void> revealFirstTheme(WidgetTester tester) async {
+/// Opens the daily word: selects the first candidate, "Suivant", then the
+/// word card shows its definition
+Future<void> revealFirstWord(WidgetTester tester) async {
   await tapAndSettle(tester, find.text('Révéler le mot du jour'));
-  await tapAndSettle(tester, find.byType(ThemeChoiceTag).first);
+  await tapAndSettle(tester, find.byType(WordChoiceTile).first);
+  await tapAndSettle(tester, find.text('Suivant'));
 }
+
+/// The rewards after the word card
+Future<void> continueToRewards(WidgetTester tester) =>
+    tapAndSettle(tester, find.text('Suivant'));
 
 /// Answers the quiz on screen, [rightAnswers] first right then wrong
 Future<void> playQuiz(WidgetTester tester, {required int questions, int? rightAnswers}) async {
@@ -64,44 +70,67 @@ void main() {
     }
   });
 
-  testWidgets('streak_30 : le reveal donne le bonus de série et un skip', (tester) async {
+  testWidgets('daily : les 3 mots sont visibles avec leur thème, « Suivant » attend un choix',
+      (tester) async {
+    final backend = await pumpScenario(tester, 'daily');
+    final wordsBefore = backend.profile.nbWords;
+
+    await tapAndSettle(tester, find.text('Révéler le mot du jour'));
+    final tiles = tester.widgetList<WordChoiceTile>(find.byType(WordChoiceTile)).toList();
+    expect(tiles, hasLength(3));
+    for (final tile in tiles) {
+      expect(find.text(tile.name), findsOneWidget);
+      expect(find.text(tile.theme), findsOneWidget);
+    }
+
+    // Nothing selected yet: "Suivant" does nothing
+    await tapAndSettle(tester, find.text('Suivant'));
+    expect(find.byType(WordChoiceTile), findsNWidgets(3));
+    expect(backend.profile.nbWords, wordsBefore);
+
+    await tapAndSettle(tester, find.byType(WordChoiceTile).at(1));
+    await tapAndSettle(tester, find.text('Suivant'));
+    expect(find.byType(WordChoiceTile), findsNothing);
+    expect(find.text(tiles[1].name), findsOneWidget);
+    expect(backend.profile.nbWords, wordsBefore + 1);
+  });
+
+  testWidgets('daily : la pastille « Prochain quiz » ouvre la règle des quiz', (tester) async {
+    await pumpScenario(tester, 'daily');
+
+    // Wednesday: the weekly quiz is in 4 days
+    expect(find.text('dans 4 jours'), findsOneWidget);
+    await tapAndSettle(tester, find.text('Prochain quiz'));
+    expect(find.text('Les quiz'), findsOneWidget);
+    expect(find.text('Quiz hebdo : dans 4 jours'), findsOneWidget);
+  });
+
+  testWidgets('streak_30 : le reveal donne le bonus de série', (tester) async {
     final backend = await pumpScenario(tester, 'streak_30');
 
-    await revealFirstTheme(tester);
-    await tapAndSettle(tester, find.text('Valider ce mot'));
+    await revealFirstWord(tester);
+    await continueToRewards(tester);
 
     expect(find.text('Série de 30 jours !'), findsOneWidget);
     expect(find.text('+100 XP'), findsOneWidget);
     expect(backend.profile.currentStreak, 30);
-    expect(backend.profile.nbSkip, 1);
   });
 
-  testWidgets('level_5 : passage au niveau 5 avec un skip', (tester) async {
+  testWidgets('level_5 : passage au niveau 5', (tester) async {
     final backend = await pumpScenario(tester, 'level_5');
 
-    await revealFirstTheme(tester);
-    await tapAndSettle(tester, find.text('Valider ce mot'));
+    await revealFirstWord(tester);
+    await continueToRewards(tester);
 
     expect(find.textContaining('Niveau 5'), findsOneWidget);
     expect(backend.profile.level, 5);
-    expect(backend.profile.nbSkip, 1);
-  });
-
-  testWidgets('no_skip : la pub récompensée donne un skip, une fois', (tester) async {
-    final backend = await pumpScenario(tester, 'no_skip');
-
-    await revealFirstTheme(tester);
-    await tapAndSettle(tester, find.text('Regarder une pub : +1 skip'));
-
-    expect(backend.profile.nbSkip, 1);
-    expect(find.text('Regarder une pub : +1 skip'), findsNothing);
   });
 
   testWidgets('bookmark_assembly : le 7e fragment assemble un marque-page', (tester) async {
     final backend = await pumpScenario(tester, 'bookmark_assembly');
 
-    await revealFirstTheme(tester);
-    await tapAndSettle(tester, find.text('Valider ce mot'));
+    await revealFirstWord(tester);
+    await continueToRewards(tester);
 
     expect(backend.profile.bookmarks, 1);
     expect(backend.profile.bookmarkFragments, 0);
@@ -110,9 +139,9 @@ void main() {
   testWidgets("alphadex_complete : le W complète l'Alphadex doré", (tester) async {
     final backend = await pumpScenario(tester, 'alphadex_complete');
 
-    await revealFirstTheme(tester);
+    await revealFirstWord(tester);
     expect(find.text('wapiti'), findsOneWidget);
-    await tapAndSettle(tester, find.text('Valider ce mot'));
+    await continueToRewards(tester);
 
     expect(find.text('Alphadex doré complet !'), findsOneWidget);
     expect(backend.profile.tier, AlphabetTier.emerald);
@@ -124,14 +153,16 @@ void main() {
 
     await tapAndSettle(tester, find.text('Réessayer'));
     await tapAndSettle(tester, find.text('Révéler le mot du jour'));
-    expect(find.text('Impossible de charger les thèmes.'), findsOneWidget);
+    expect(find.text('Impossible de charger les mots du jour.'), findsOneWidget);
 
     await tapAndSettle(tester, find.text('Réessayer'));
-    await tapAndSettle(tester, find.byType(ThemeChoiceTag).first);
-    expect(find.text('Impossible de révéler ce mot. Réessaie.'), findsOneWidget);
+    await tapAndSettle(tester, find.byType(WordChoiceTile).first);
+    await tapAndSettle(tester, find.text('Suivant'));
+    expect(find.text('Impossible de valider ce mot. Réessaie.'), findsOneWidget);
 
-    await tapAndSettle(tester, find.byType(ThemeChoiceTag).first);
-    expect(find.text('Valider ce mot'), findsOneWidget);
+    await tapAndSettle(tester, find.text('Suivant'));
+    expect(find.byType(WordChoiceTile), findsNothing);
+    expect(find.text('Suivant'), findsOneWidget);
   });
 
   testWidgets('sunday_locked : pas assez de mots pour le quiz hebdo', (tester) async {
@@ -204,6 +235,15 @@ void main() {
       find.byWidgetPredicate((w) => w is LetterTile && w.letter == 'Z'),
     );
     expectDialogLetter(tester, 'Z', AlphabetTier.emerald);
+  });
+
+  testWidgets('profile : le bouton ⓘ ouvre la légende des ressources', (tester) async {
+    await pumpScenario(tester, 'profile');
+
+    await tapAndSettle(tester, find.byTooltip('Légende des ressources'));
+    expect(find.text('Tes ressources'), findsOneWidget);
+    expect(find.text('Série'), findsOneWidget);
+    expect(find.text('Marque-pages'), findsOneWidget);
   });
 
   testWidgets('notebook : la recherche ignore les accents', (tester) async {

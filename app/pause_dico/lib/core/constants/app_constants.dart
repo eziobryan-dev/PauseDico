@@ -26,18 +26,21 @@ abstract class AppConstants {
   static const String userTable = 'user';
   static const String userWordHistoryTable = 'user_word_history';
   static const String userGameProfileTable = 'user_game_profile';
+  static const String appVersionPolicyTable = 'app_version_policy';
+
+  // Store pages (forced update screen)
+  static const String androidPackageId = 'com.toutai.pausedico';
+  static const String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=$androidPackageId';
 
   // Database Functions (RPC)
   static const String getDailyChoicesRpc = 'get_daily_choices';
   static const String revealDailyWordRpc = 'reveal_daily_word';
-  static const String skipDailyWordRpc = 'skip_daily_word';
   static const String setWordLikedRpc = 'set_word_liked';
   static const String getPendingSpecialQuizzesRpc = 'get_pending_special_quizzes';
   static const String startQuizRpc = 'start_quiz';
   static const String answerQuizQuestionRpc = 'answer_quiz_question';
   static const String getQuizResultRpc = 'get_quiz_result';
-  static const String canClaimAdSkipRpc = 'can_claim_ad_skip';
-  static const String claimAdSkipRpc = 'claim_ad_skip';
   static const String useBookmarkRpc = 'use_bookmark';
   static const String deleteMyAccountRpc = 'delete_my_account';
 
@@ -47,8 +50,16 @@ abstract class AppConstants {
   // Quiz
   static const Duration quizNextQuestionDelay = Duration(milliseconds: 1500);
   static const int quizMaxAnswerOptions = 10;
-  /// Mirrors quiz_rules('weekly').min_words on the server
+  // Mirror quiz_rules() on the server (period in days, minimum words over the
+  // period, number of questions)
   static const int weeklyQuizMinWords = 3;
+  static const int weeklyQuizQuestions = 6;
+  static const int monthlyQuizPeriod = 30;
+  static const int monthlyQuizMinWords = 10;
+  static const int monthlyQuizQuestions = 15;
+  static const int yearlyQuizPeriod = 365;
+  static const int yearlyQuizMinWords = 50;
+  static const int yearlyQuizQuestions = 50;
 
   // Daily Notification
   static const int dailyNotificationId = 0;
@@ -72,8 +83,6 @@ abstract class AppConstants {
   // before publishing (clicking real ads of your own app gets it banned)
   static const String admobBannerAndroid = 'ca-app-pub-3940256099942544/9214589741';
   static const String admobBannerIos = 'ca-app-pub-3940256099942544/2435281174';
-  static const String admobRewardedAndroid = 'ca-app-pub-3940256099942544/5224354917';
-  static const String admobRewardedIos = 'ca-app-pub-3940256099942544/1712485313';
 
   // Theme
   static const Duration darkThemeSaveDebounce = Duration(milliseconds: 600);

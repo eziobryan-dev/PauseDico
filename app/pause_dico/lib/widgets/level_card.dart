@@ -8,9 +8,11 @@ import '../models/alphabet_tier_model.dart';
 import '../models/user_game_profile_model.dart';
 import '../services/level_service.dart';
 import 'bookmark_art.dart';
+import 'resources_info_sheet.dart';
 
-/// Profile card: level and title, xp progress, streak, skips, words unlocked,
-/// letters, bookmark fragments and bookmarks (named after the Alphadex tier)
+/// Profile card: level and title, xp progress, streak, words unlocked,
+/// letters, bookmark fragments and bookmarks (named after the Alphadex tier),
+/// with an info button opening their legend
 class LevelCard extends StatelessWidget {
   final UserGameProfileModel profile;
 
@@ -65,6 +67,11 @@ class LevelCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  tooltip: 'Légende des ressources',
+                  onPressed: () => ResourcesInfoSheet.show(context, tier: tier),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -85,11 +92,6 @@ class LevelCard extends StatelessWidget {
                   icon: Icons.local_fire_department,
                   label: '$streak jour${streak > 1 ? 's' : ''} (record: ${profile.bestStreak})',
                   color: AppColors.tertiary,
-                ),
-                _Stat(
-                  icon: Icons.replay,
-                  label: '${profile.nbSkip} skip${profile.nbSkip > 1 ? 's' : ''}',
-                  color: AppColors.success,
                 ),
                 _Stat(
                   icon: Icons.menu_book_rounded,

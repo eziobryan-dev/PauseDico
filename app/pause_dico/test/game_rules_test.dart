@@ -13,7 +13,6 @@ UserGameProfileModel _profile({required int streak, required DateTime? lastRevea
     nbQuizWeeklyCompleted: 0,
     nbQuizMonthlyCompleted: 0,
     nbQuizYearlyCompleted: 0,
-    nbSkip: 1,
     currentStreak: streak,
     bestStreak: streak,
     lastRevealDate: lastReveal,
@@ -78,6 +77,13 @@ void main() {
   });
 
   group('DateHelpers', () {
+    test('jours avant le prochain quiz hebdo (0 le dimanche)', () {
+      expect(DateHelpers.daysUntilSunday(DateTime(2026, 11, 22)), 0); // dimanche
+      expect(DateHelpers.daysUntilSunday(DateTime(2026, 11, 23)), 6); // lundi
+      expect(DateHelpers.daysUntilSunday(DateTime(2026, 11, 25)), 4); // mercredi
+      expect(DateHelpers.daysUntilSunday(DateTime(2026, 11, 28)), 1); // samedi
+    });
+
     test('semaine du quiz : lundi au samedi avant le dimanche', () {
       final sunday = DateTime(2026, 11, 22);
       expect(DateHelpers.weekStart(sunday), DateTime(2026, 11, 16));

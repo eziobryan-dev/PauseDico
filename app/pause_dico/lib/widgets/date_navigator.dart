@@ -5,7 +5,8 @@ import '../core/utils/date_helpers.dart';
 
 /// Displays a date in French with previous / next day arrows. Tapping the
 /// date opens a calendar: days before [firstDate] (account creation) and
-/// after today are greyed out.
+/// after today are greyed out. Without a next day, [trailing] (if any) takes
+/// the place of the next arrow.
 class DateNavigator extends StatelessWidget {
   final DateTime date;
   final DateTime firstDate;
@@ -13,6 +14,7 @@ class DateNavigator extends StatelessWidget {
   final bool canGoNext;
   final ValueChanged<int> onChangeDay;
   final ValueChanged<DateTime> onPickDate;
+  final Widget? trailing;
 
   const DateNavigator({
     super.key,
@@ -22,6 +24,7 @@ class DateNavigator extends StatelessWidget {
     required this.canGoNext,
     required this.onChangeDay,
     required this.onPickDate,
+    this.trailing,
   });
 
   Future<void> _openCalendar(BuildContext context) async {
@@ -46,16 +49,23 @@ class DateNavigator extends StatelessWidget {
           child: TextButton.icon(
             onPressed: () => _openCalendar(context),
             icon: const Icon(Icons.calendar_month, size: 20),
-            label: Text(
-              DateHelpers.formatFrenchDate(date),
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            // Shrinks on narrow screens (next to the "next quiz" pill)
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                DateHelpers.formatFrenchDate(date),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ),
-        _arrow(Icons.chevron_right, visible: canGoNext, offset: 1),
+        if (!canGoNext && trailing != null)
+          trailing!
+        else
+          _arrow(Icons.chevron_right, visible: canGoNext, offset: 1),
       ],
     );
   }

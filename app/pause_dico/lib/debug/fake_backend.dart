@@ -30,7 +30,7 @@ import '../repositories/user_word_history_repository.dart';
 import '../services/level_service.dart';
 
 /// A call that a scenario makes fail (simulated network / server error)
-enum FakeFailure { loadWord, dailyChoices, reveal, skip, like, profile, quizStart, quizAnswer }
+enum FakeFailure { loadWord, dailyChoices, reveal, like, profile, quizStart, quizAnswer }
 
 class FakeBackendException implements Exception {
   final String message;
@@ -100,7 +100,7 @@ class FakeBackend
   UserGameProfileModel _profile;
   final List<UserWordHistoryModel> _history;
 
-  /// Words never had by the user, in draw order (daily candidates, skips)
+  /// Words never had by the user, in draw order (daily candidates)
   final List<WordModel> _pool;
   final List<SpecialQuizModel> _pendingQuizzes;
   final Map<String, QuizResultModel> _quizResults;
@@ -110,7 +110,6 @@ class FakeBackend
 
   final Map<int, WordModel> _words = {};
   final Map<String, List<int>> _dailyChoices = {};
-  final Set<String> _adClaims = {};
   final Map<String, _FakeQuizSession> _quizSessions = {};
   final Set<String> _rewardedLetters = {};
   int _sessionCounter = 0;
@@ -195,22 +194,6 @@ class FakeBackend
       _respond(() => _profile, FakeFailure.profile);
 
   @override
-  Future<bool> canClaimAdSkip(DateTime today) => _respond(() => _canClaimAdSkip(today));
-
-  bool _canClaimAdSkip(DateTime today) =>
-      !_adClaims.contains(DateHelpers.toIsoDateString(today)) &&
-      _profile.nbSkip < _Rules.maxSkips;
-
-  @override
-  Future<RewardSummaryModel> claimAdSkip(DateTime today) => _respond(() {
-        if (!_canClaimAdSkip(today)) {
-          throw const FakeBackendException('Pub déjà récompensée aujourd\'hui');
-        }
-        _adClaims.add(DateHelpers.toIsoDateString(today));
-        return _grant([_event('ad', 'Pub regardée', skips: 1)]);
-      });
-
-  @override
   Future<RewardSummaryModel> useBookmark(DateTime today, String letter) =>
       _respond(() {
         if (_profile.bookmarks <= 0) throw const FakeBackendException('Aucun marque-page');
@@ -255,7 +238,11 @@ class FakeBackend
   Future<List<DailyWordChoiceModel>> getDailyChoices(DateTime date) => _respond(
         () => [
           for (final id in _choicesFor(date))
-            DailyWordChoiceModel(wordId: id, theme: _words[id]!.theme),
+            DailyWordChoiceModel(
+              wordId: id,
+              name: _words[id]!.name,
+              theme: _words[id]!.theme,
+            ),
         ],
         FakeFailure.dailyChoices,
       );
@@ -271,10 +258,6 @@ class FakeBackend
         _history[index] = _history[index].copyWith(liked: liked);
         return liked;
       }, FakeFailure.like);
-
-  @override
-  Future<DailyWordRevealModel> skipDailyWord(DateTime date) =>
-      _respond(() => _skip(date), FakeFailure.skip);
 
   @override
   Future<bool> isWordAcknowledged(int wordId) =>
@@ -348,11 +331,7 @@ class FakeBackend
     final existing = _entryAt(date);
     if (existing != null) {
       // Idempotent: already revealed, no new reward
-      return DailyWordRevealModel(
-        word: existing.word,
-        skipsLeft: _profile.nbSkip,
-        liked: existing.liked,
-      );
+      return DailyWordRevealModel(word: existing.word, liked: existing.liked);
     }
     final choices = _dailyChoices[DateHelpers.toIsoDateString(date)];
     if (choices == null || !choices.contains(wordId)) {
@@ -389,58 +368,20 @@ class FakeBackend
     ];
     fragmentOnNextReveal = false;
 
-    return DailyWordRevealModel(
-      word: word,
-      skipsLeft: _profile.nbSkip,
-      rewards: _grant(events),
-    );
-  }
-
-  DailyWordRevealModel _skip(DateTime date) {
-    final entry = _entryAt(date);
-    if (entry == null) throw const FakeBackendException('Aucun mot à remplacer');
-    if (_profile.nbSkip <= 0) throw const FakeBackendException('Plus de skip');
-    if (_pool.isEmpty) throw const FakeBackendException('Plus de mot disponible');
-
-    final word = _pool.removeAt(0);
-    _history
-      ..remove(entry)
-      ..add(UserWordHistoryModel(word: word, date: entry.date));
-    _profile = _profile.copyWith(nbSkip: _profile.nbSkip - 1);
-    _recomputeWordMasks();
-
-    return DailyWordRevealModel(
-      word: word,
-      skipsLeft: _profile.nbSkip,
-      rewards: _grant(_unlockLetter(_firstLetter(word.name), date)),
-    );
-  }
-
-  /// Letters of the history words (the skipped word's letter may be lost)
-  void _recomputeWordMasks() {
-    final since = _profile.emeraldSince;
-    var gold = 0;
-    var emerald = 0;
-    for (final entry in _history) {
-      final bit = UserGameProfileModel.letterBit(_firstLetter(entry.word.name));
-      gold |= bit;
-      if (since != null && entry.date.isAfter(since)) emerald |= bit;
-    }
-    _profile = _profile.copyWith(lettersMask: gold, emeraldMask: emerald);
+    return DailyWordRevealModel(word: word, rewards: _grant(events));
   }
 
   List<RewardEventModel> _streakEvents(int streak) {
-    if (streak % 100 == 0) {
-      return [_event('streak', 'Série de $streak jours !', xp: 300, skips: 3)];
-    }
-    final (xp, skips) = switch (streak) {
-      30 => (100, 1),
-      7 => (30, 0),
-      3 => (15, 0),
-      _ => (0, 0),
-    };
+    final xp = streak % 100 == 0
+        ? 300
+        : switch (streak) {
+            30 => 100,
+            7 => 30,
+            3 => 15,
+            _ => 0,
+          };
     if (xp == 0) return [];
-    return [_event('streak', 'Série de $streak jours !', xp: xp, skips: skips)];
+    return [_event('streak', 'Série de $streak jours !', xp: xp)];
   }
 
   /// Unlocks [letter] in the current tier; rewarded only the first time
@@ -481,26 +422,20 @@ class FakeBackend
     return events;
   }
 
-  /// Applies [events] to the profile one by one (xp capped, +1 skip every 5
-  /// levels, skip stock cap, 7 fragments = 1 bookmark), like `grant_reward`
+  /// Applies [events] to the profile one by one (xp capped, 7 fragments =
+  /// 1 bookmark), like `grant_reward`
   RewardSummaryModel _grant(List<RewardEventModel> events) {
     final granted = <RewardEventModel>[];
     for (final event in events) {
       final p = _profile;
       final xp = min(p.xp + event.xp, LevelService.xpForLevel(LevelService.maxLevel));
       final level = LevelService.levelForXp(xp);
-      final levelSkips = [
-        for (var l = p.level + 1; l <= level; l++)
-          if (l % _Rules.levelsPerSkip == 0) l,
-      ].length;
-      final skips = max(0, min(event.skips + levelSkips, _Rules.maxSkips - p.nbSkip));
       final fragments = p.bookmarkFragments + event.fragments;
       final assembled = fragments ~/ AppConstants.fragmentsPerBookmark;
 
       _profile = p.copyWith(
         xp: xp,
         level: level,
-        nbSkip: p.nbSkip + skips,
         bookmarkFragments: fragments % AppConstants.fragmentsPerBookmark,
         bookmarks: p.bookmarks + assembled,
       );
@@ -508,7 +443,6 @@ class FakeBackend
         source: event.source,
         label: event.label,
         xp: xp - p.xp,
-        skips: skips,
         fragments: event.fragments,
         bookmarks: assembled,
         tier: p.tier,
@@ -526,7 +460,6 @@ class FakeBackend
       events: granted,
       xp: p.xp,
       level: p.level,
-      nbSkip: p.nbSkip,
       nbWords: p.nbWords,
       currentStreak: p.currentStreak,
       bookmarkFragments: p.bookmarkFragments,
@@ -539,7 +472,6 @@ class FakeBackend
     String source,
     String label, {
     int xp = 0,
-    int skips = 0,
     int fragments = 0,
     String? letter,
     int? words,
@@ -550,7 +482,6 @@ class FakeBackend
       source: source,
       label: label,
       xp: xp,
-      skips: skips,
       fragments: fragments,
       bookmarks: 0,
       tier: AlphabetTier.gold,
@@ -703,10 +634,8 @@ class _FakeQuizSession {
       );
 }
 
-/// Mirror of the server rules (skip_rules, bookmark_rules, quiz_rules…)
+/// Mirror of the server rules (bookmark_rules, quiz_rules…)
 abstract class _Rules {
-  static const maxSkips = 3;
-  static const levelsPerSkip = 5;
   static const revealXp = 10;
   static const goldLetterXp = 20;
   static const emeraldLetterXp = 30;

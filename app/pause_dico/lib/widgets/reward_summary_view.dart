@@ -7,7 +7,7 @@ import '../models/reward_summary_model.dart';
 import '../services/level_service.dart';
 import 'fade_in.dart';
 
-/// Rewards just granted: one line per reward (+xp, +skips), fading in one
+/// Rewards just granted: one line per reward (+xp, +fragments), fading in one
 /// after the other every [rowInterval], and the new level when one was
 /// reached. Vibrates once when shown (stronger on a level up).
 class RewardSummaryView extends StatefulWidget {
@@ -64,14 +64,6 @@ class _RewardSummaryViewState extends State<RewardSummaryView> {
                     ),
                     if (rewards.events[i].xp > 0)
                       _Gain(label: '+${rewards.events[i].xp} XP', color: AppColors.info),
-                    if (rewards.events[i].skips > 0) ...[
-                      const SizedBox(width: 6),
-                      _Gain(
-                        label: '+${rewards.events[i].skips} skip'
-                            '${rewards.events[i].skips > 1 ? 's' : ''}',
-                        color: AppColors.success,
-                      ),
-                    ],
                     if (rewards.events[i].fragments > 0) ...[
                       const SizedBox(width: 6),
                       _Gain(

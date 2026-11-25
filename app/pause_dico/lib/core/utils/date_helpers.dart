@@ -25,6 +25,10 @@ abstract class DateHelpers {
   /// Returns the Saturday preceding the given Sunday.
   static DateTime weekEnd(DateTime sunday) => addDays(sunday, -1);
 
+  /// Days until the next Sunday (weekly quiz day), 0 on a Sunday.
+  static int daysUntilSunday(DateTime date) =>
+      (DateTime.sunday - date.weekday) % DateTime.daysPerWeek;
+
   /// Returns the date formatted as ISO string 'YYYY-MM-DD' for SQL queries.
   static String toIsoDateString([DateTime? date]) {
     final targetDate = date ?? AppClock.now();

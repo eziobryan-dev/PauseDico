@@ -20,7 +20,7 @@ class UserWordHistoryRepository {
   String? get _userId => _client.auth.currentUser?.id;
 
   /// In-memory caches keyed by ISO date ('YYYY-MM-DD'), kept up to date by
-  /// reveal / skip / like. A cached null means "no word on that date".
+  /// reveal / like. A cached null means "no word on that date".
   final Map<String, UserWordHistoryModel?> _entryCache = {};
   final Map<String, List<WordModel>> _weekCache = {};
 
@@ -105,7 +105,7 @@ class UserWordHistoryRepository {
         response.map((row) => WordModel.fromJson(row['word'])).toList();
   }
 
-  /// Stores the word revealed / skipped on [date] in the cache
+  /// Stores the word revealed on [date] in the cache
   DailyWordRevealModel _cacheReveal(DateTime date, DailyWordRevealModel reveal) {
     _entryCache[DateHelpers.toIsoDateString(date)] = UserWordHistoryModel(
       word: reveal.word,
@@ -116,8 +116,9 @@ class UserWordHistoryRepository {
     return reveal;
   }
 
-  /// Gets the 3 daily word candidates of [date] (only their theme), picked
-  /// server-side once per day among words the user never had
+  /// Gets the 3 daily word candidates of [date] (name and theme), picked
+  /// server-side once per day among words the user never had: the same 3
+  /// come back until one is chosen
   Future<List<DailyWordChoiceModel>> getDailyChoices(DateTime date) async {
     final response = await _client.rpc(
       AppConstants.getDailyChoicesRpc,
@@ -129,7 +130,7 @@ class UserWordHistoryRepository {
   }
 
   /// Reveals the candidate [wordId] chosen for [date]: saves it into the
-  /// history (idempotent) and returns it with the remaining skip tokens
+  /// history (idempotent) and returns it with its definition and rewards
   Future<DailyWordRevealModel> revealDailyWord(DateTime date, int wordId) async {
     final response = await _client.rpc(
       AppConstants.revealDailyWordRpc,
@@ -156,18 +157,6 @@ class UserWordHistoryRepository {
       }
     }
     return saved;
-  }
-
-  /// Replaces the daily word of [date] with a random one, consuming a skip token
-  Future<DailyWordRevealModel> skipDailyWord(DateTime date) async {
-    final response = await _client.rpc(
-      AppConstants.skipDailyWordRpc,
-      params: {'p_date': DateHelpers.toIsoDateString(date)},
-    );
-    return _cacheReveal(
-      date,
-      DailyWordRevealModel.fromJson(response as Map<String, dynamic>),
-    );
   }
 
   /// Checks if the logged-in user has already acknowledged this word
